@@ -4,7 +4,7 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css';
 
-
+const URL = import.meta.env.VITE_BACKEND_URL;
 function App() {
 
   const [result, setResult] = useState([])
@@ -13,7 +13,7 @@ function App() {
       <section id="center">
         <h1>mern render</h1>
         <button onClick={async() => {
-          const res= await fetch('http://localhost:3000/users')
+          const res= await fetch(`${URL}/users`)
         const data= await res.json()
         console.log(data)
         setResult(data)
