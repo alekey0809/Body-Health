@@ -16,7 +16,7 @@ const pool = new pg.Pool({
 });
 
 app.use(cors({
-    origin: 'https://body-health-front.onrender.com/'
+    origin: 'https://body-health-front.onrender.com'
 }));
 app.get('/users',(req,res ) => {
 res.send({users:[]});
