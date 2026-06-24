@@ -15,9 +15,9 @@ const pool = new pg.Pool({
     database: process.env.DB_NAME,
 });
 
-// app.use(cors({
-//     origin: FRONTEND_URL
-// }));
+app.use(cors({
+    origin: 'https://sistema-web-para-body-health.onrender.com'
+}));
 app.get('/users',(req,res ) => {
 res.send({users:[]});
 });
