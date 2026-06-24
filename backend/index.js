@@ -15,9 +15,9 @@ const pool = new pg.Pool({
     database: process.env.DB_NAME,
 });
 
-app.use(cors({
-    origin: FRONTEND_URL
-}));
+// app.use(cors({
+//     origin: FRONTEND_URL
+// }));
 app.get('/users',(req,res ) => {
 res.send({users:[]});
 });

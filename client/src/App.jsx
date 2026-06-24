@@ -7,7 +7,7 @@ import './App.css';
 const URL = import.meta.env.VITE_BACKEND_URL;
 function App() {
 
-  const [result, setResult] = useState([])
+  const [result, setResult] = useState('')
   return (
     <>
       <section id="center">
