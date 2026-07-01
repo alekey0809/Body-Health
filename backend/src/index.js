@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { PORT } from './config.js';
-import { UserRepository } from './user-repository.js'; // Asegúrate de importarlo bien
+import { PORT } from '../config.js';
+import { UserRepository } from '../user-repository.js'; // Asegúrate de importarlo bien
 
 const app = express();
 
