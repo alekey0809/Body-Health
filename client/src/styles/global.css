@@ -1,0 +1,160 @@
+:root {
+  /* Paleta Pastel */
+  --color-rojo-pastel: #ffb3ba;
+  --color-naranja-pastel: #ffdfba;
+  --color-amarillo-pastel: #ffffba;
+  --color-gris-cafe-pastel: #d9d0c7;
+  
+  /* Tonos más fuertes para textos y bordes */
+  --color-texto-oscuro: #5c4d44;
+  --color-texto-claro: #8a7c73;
+  
+  /* Fondos */
+  --color-fondo: #fcfbf9;
+  --color-superficie: rgba(255, 255, 255, 0.6);
+  
+  /* UI Global */
+  --radio-borde: 20px;
+  --sombra-suave: 0 8px 32px 0 rgba(92, 77, 68, 0.1);
+  --borde-cristal: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+  background-color: var(--color-fondo);
+  background-image: 
+    radial-gradient(at 0% 0%, var(--color-rojo-pastel) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, var(--color-naranja-pastel) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, var(--color-amarillo-pastel) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, var(--color-gris-cafe-pastel) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-texto-oscuro);
+  min-height: 100vh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Tipografía */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--color-texto-oscuro);
+  margin-bottom: 1rem;
+}
+
+p {
+  color: var(--color-texto-claro);
+  line-height: 1.6;
+}
+
+a {
+  text-decoration: none;
+  color: #ff8c94;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+a:hover {
+  color: #ff6b76;
+}
+
+/* Glassmorphism Containers */
+.glass-container {
+  background: var(--color-superficie);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radio-borde);
+  border: var(--borde-cristal);
+  box-shadow: var(--sombra-suave);
+  padding: 2.5rem;
+}
+
+/* Formularios */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-texto-oscuro);
+}
+
+.input-group input {
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(217, 208, 199, 0.5);
+  background: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--color-texto-oscuro);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  border-color: #ffb3ba;
+  box-shadow: 0 0 0 3px rgba(255, 179, 186, 0.3);
+  background: #ffffff;
+}
+
+/* Botones */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-rojo-pastel) 0%, var(--color-naranja-pastel) 100%);
+  color: var(--color-texto-oscuro);
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(255, 179, 186, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 179, 186, 0.5);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-texto-oscuro);
+  border: 2px solid var(--color-gris-cafe-pastel);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-gris-cafe-pastel);
+  color: #fff;
+}
+
+/* Layout helpers */
+.page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px); /* Restando navbar */
+  padding: 2rem;
+}
