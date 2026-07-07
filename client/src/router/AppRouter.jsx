@@ -1,13 +1,46 @@
+import React, { useContext } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "../pages/HomePage/HomePage";
+import LoginPage from "../pages/LoginPage/LoginPage";
+import RegisterPage from "../pages/RegisterPage/RegisterPage";
+import DashboardPage from "../pages/DashboardPage/DashboardPage";
+import Navbar from "../components/Navbar/Navbar";
+import { AuthContext } from "../context/AuthContext";
+
+// Componente para proteger rutas privadas
+const PrivateRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  return user ? children : <Navigate to="/login" replace />;
+};
+
+// Componente para evitar que usuarios logueados vean login/registro
+const PublicRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  return !user ? children : <Navigate to="/dashboard" replace />;
+};
 
 const AppRouter = () => {
   return (
     <Routes>
       <Route path="/main" element={<HomePage />} />
+      
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+      
+      <Route 
+        path="/dashboard" 
+        element={
+          <PrivateRoute>
+            <>
+              <Navbar /> 
+              <DashboardPage />
+            </>
+          </PrivateRoute>
+        } 
+      />
 
-
-      {/* Ruta para redirigir en caso de no encontrar el dominio */}
       <Route path="/*" element={<Navigate to="/main" replace />} />
     </Routes>
   );

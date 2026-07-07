@@ -1,0 +1,169 @@
+/* PALETA DE COLORES Y TIPOGRAFÍA DEL MOLDE */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+.home-page-container {
+    background-color: #fff8f7; /* bg-background */
+    color: #231918;            /* text-on-surface */
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* TOP APP BAR */
+.home-header {
+    background-color: rgba(255, 248, 247, 0.8);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(133, 115, 113, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
+
+.home-logo {
+    font-size: 1.5rem;
+    fontWeight: 900;
+    letter-spacing: -0.05em;
+    color: #231918;
+}
+
+.home-tagline-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #e01717; /* primary */
+    background-color: #ffdad5; /* primary-container */
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+}
+
+/* CONTENIDO PRINCIPAL */
+.home-main {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.home-welcome-label {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #e01717;
+    margin-bottom: 0.5rem;
+}
+
+.home-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #231918;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+}
+
+.home-divider {
+    height: 0.5rem;
+    width: 5rem;
+    background-color: #e01717;
+    border-radius: 9999px;
+    margin: 1.5rem auto 2.5rem;
+}
+
+.home-description {
+    font-size: 1.15rem;
+    color: #534341; /* on-surface-variant */
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 3rem;
+    font-weight: 500;
+}
+
+/* CONTENEDOR DE BOTONES */
+.home-button-container {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* BOTONES DE ACCIÓN */
+.home-btn-primary {
+    background-color: #e01717; /* primary */
+    color: #ffffff;            /* on-primary */
+    padding: 1rem 2.5rem;
+    border-radius: 0.75rem;    /* xl */
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    box-shadow: 0 10px 15px -3px rgba(224, 23, 23, 0.2);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.home-btn-primary:hover {
+    background-color: #c01313;
+    transform: translateY(-2px);
+}
+
+.home-btn-secondary {
+    background-color: #775652; /* secondary */
+    color: #ffffff;            /* on-secondary */
+    padding: 1rem 2.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    box-shadow: 0 10px 15px -3px rgba(119, 86, 82, 0.1);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.home-btn-secondary:hover {
+    background-color: #614441;
+    transform: translateY(-2px);
+}
+
+/* FOOTER ESTÉTICO */
+.home-footer {
+    margin-top: 5rem;
+    padding: 2rem 0;
+    border-top: 1px solid rgba(133, 115, 113, 0.2);
+    width: 100%;
+}
+
+.home-quote {
+    font-style: italic;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: rgba(83, 67, 65, 0.4);
+    max-width: 500px;
+    margin: 0 auto 1rem;
+}
+
+.home-copyright {
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: rgba(83, 67, 65, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+}

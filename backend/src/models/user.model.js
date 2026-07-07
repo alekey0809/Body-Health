@@ -10,11 +10,16 @@ export const UserModel = {
             WHERE u_correo_electronico = $1
         `;
         const { rows } = await pool.query(query, [email]);
-        return rows[0]; // Retorna el usuario o undefined
+        return rows[0]; 
     },
 
     // Crear un nuevo usuario (Para el Registro)
     create: async ({ nombres, apellidos, idTipoDoc, numeroDoc, correo, contrasena, idRol, contacto, idEstadoGen }) => {
+        
+        if (!contrasena || typeof contrasena !== 'string') {
+            throw new Error('La contraseña es requerida y debe ser un texto válido');
+        }
+
         // 1. Generar un UUID único para el usuario
         const u_id = crypto.randomUUID();
 
@@ -27,7 +32,7 @@ export const UserModel = {
                 u_correo_electronico, u_contrasena, u_r_id, u_numero_contacto, u_eg_id
             ) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            RETURNING u_id, u_correo_electronico;
+            RETURNING u_id, u_correo_electronico;                                                                                                                                                                                                                 
         `;
 
         const values = [

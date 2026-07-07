@@ -1,5 +1,6 @@
 import { UserModel } from '../models/user.model.js';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 // CONTROLADOR DEL REGISTRO
 export const register = async (req, res) => {
@@ -44,9 +45,17 @@ export const login = async (req, res) => {
         }
 
         // 4. Éxito
+        const tokenPayload = {
+            id: user.u_id,
+            correo: user.u_correo_electronico,
+            rol: user.u_r_id
+        };
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'secreto_super_seguro_development', { expiresIn: '8h' });
+
         return res.status(200).json({
             ok: true,
             message: "¡Login exitoso!",
+            token,
             user: {
                 id: user.u_id,
                 nombre: `${user.u_nombres} ${user.u_apellidos}`,
