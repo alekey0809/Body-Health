@@ -8,20 +8,25 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
-    idTipoDoc: 1, // Por defecto
+    idTipoDoc: 1, // Por defecto 'Cédula de Ciudadanía' (ID: 1)
     numeroDoc: '',
     correo: '',
     contrasena: '',
-    idRol: 1, // Cliente por defecto
+    idRol: 2, // Cambiado a 2 por defecto si el flujo común es registrar Socios/Clientes
     contacto: '',
-    idEstadoGen: 1 // Activo por defecto
+    idEstadoGen: 1 // Activo por defecto (ID: 7)
   });
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Si el campo es idTipoDoc o idRol, convertimos el string del value a un entero (Number)
+    const value = e.target.name === 'idTipoDoc' || e.target.name === 'idRol' 
+      ? Number(e.target.value) 
+      : e.target.value;
+
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -65,11 +70,30 @@ const RegisterPage = () => {
             </div>
           </div>
 
+          
           <div className="input-group">
-            <label>Tipo Documento (ID)</label>
+            <label>Tipo Documento</label>
             <div style={{ position: 'relative' }}>
-              <Hash style={{ position: 'absolute', top: '12px', left: '10px', color: '#8a7c73' }} size={18} />
-              <input type="number" name="idTipoDoc" value={formData.idTipoDoc} onChange={handleChange} required style={{ paddingLeft: '2.5rem', width: '100%' }} />
+              <Hash style={{ position: 'absolute', top: '12px', left: '10px', color: '#8a7c73', zIndex: 1 }} size={18} />
+              <select 
+                name="idTipoDoc" 
+                value={formData.idTipoDoc} 
+                onChange={handleChange} 
+                required 
+                style={{ 
+                  paddingLeft: '2.5rem', 
+                  width: '100%', 
+                  height: '42px', // Ajusta esto según el alto de tus inputs tradicionales
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                  color: '#fff',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value={1} style={{ backgroundColor: '#222', color: '#fff' }}>Cédula de Ciudadanía (CC)</option>
+                <option value={2} style={{ backgroundColor: '#222', color: '#fff' }}>Cédula de Extranjería (CE)</option>
+                <option value={3} style={{ backgroundColor: '#222', color: '#fff' }}>Tarjeta de Identidad (TI)</option>
+              </select>
             </div>
           </div>
           
