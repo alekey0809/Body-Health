@@ -1,6 +1,7 @@
+
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { LogIn, User, Lock } from 'lucide-react';
+import { LogIn, User, Lock, ArrowLeft } from 'lucide-react'; // 1. Importamos ArrowLeft
 import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
@@ -24,8 +25,23 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="page-container">
-      <div className="glass-container" style={{ width: '100%', maxWidth: '400px' }}>
+    <div className="page-container" style={{ position: 'relative' }}>
+      
+      {/* Botón flotante para regresar al Home */}
+      <Link to="/main" className="btn-navbar-secondary" style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        textDecoration: 'none',
+        padding: '0.5rem 1rem'
+      }}>
+        <ArrowLeft size={18} /> Volver al Inicio
+      </Link>
+
+      <div className="glass-container" style={{ width: '100%', maxWidth: '400px', marginTop: '4rem' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <LogIn style={{ verticalAlign: 'middle', marginRight: '8px' }} />
           Iniciar Sesión

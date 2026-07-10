@@ -42,7 +42,7 @@ const Navbar = () => {
         ) : (
           <>
             <Link to="/login" className="btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <LogIn size={18} /> Iniciar Sesión
+              <LogIn  size={18} /> Iniciar Sesión
             </Link>
             <Link to="/register" className="btn-primary" style={{ padding: '0.5rem 1rem', width: 'auto' }}>
               <UserPlus size={18} /> Registrarse

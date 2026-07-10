@@ -12,8 +12,8 @@ const HomePage = () => {
       {/* 1. Barra de Navegación superior (TopAppBar) */}
       <header className="home-header">
         <div className="header-brand">
-          <span className="material-symbols-outlined brand-icon">fitness_center</span>
-          <span className="home-logo">Bodyhealt</span>
+          <span className="material-symbols-outlined brand-icon">Bodyhealt</span>
+          
         </div>
         
         <nav className="header-nav">
@@ -22,13 +22,24 @@ const HomePage = () => {
           <a href="#noticias" className="nav-link">Noticias</a>
         </nav>
 
-        <div className="header-actions">
-          <span className="home-tagline-badge">Fitness Collective</span>
-          
-          {user && (
-            <button onClick={logout} className="logout-btn">
-              Cerrar Sesión
-            </button>
+       <div className="header-actions">
+          {/* Si NO hay usuario logueado, mostramos el botón de Ingresar */}
+          {!user ? (
+            <Link to="/login" className="home-tagline-badge-link">
+              <span className="home-tagline-badge">Ingresar</span>
+            </Link>
+          ) : (
+            /* Si SÍ hay usuario logueado, mostramos el botón de Cerrar Sesión */
+         
+            <>
+              <Link to="/dashboard" className="">
+                Ir al Dashboard ({user.u_nombres || 'Usuario'})
+              </Link>
+              
+              <button onClick={logout} className="logout-btn">
+                Cerrar Sesión
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -103,11 +114,20 @@ const HomePage = () => {
               </div>
             </div>
             <div className="ubicacion-map-wrapper">
-              <img 
+              {/* <img 
                 alt="Map of Bodyhealt location" 
                 className="map-img" 
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCjB8BQrXPDzEgaVF7FKHWT9r1sakK1BLCJpb5mIxLVpBsd8oKx1JsZ4vuntrv-vhzY_ouMIttut0RYKQrrJt7iEhoBCzMJZv9QpeisONzKRAKLAr_lOntk2BYLakOHuahtb3xcv4y57blBLKa2G9E7VGDYX_VPEuyqSpEEujkchOBilA1LOyRzhcfwVdeiePZ6jKy3al1b_PpyAbf0fu2TdFrc2Nom478ymYEJXd8ukEhUsIhe6yHuamLi-DJ8Ad962ISYP2ZFA4"
-              />
+              /> */}
+              <iframe 
+  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d993.5790149054532!2d-75.49925030000004!3d5.052418400000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e4765667273dc79%3A0x7304f6bac0f84a31!2sCra.%2065%20Bis%20%236564%2C%20Manizales%2C%20Caldas!5e0!3m2!1ses-419!2sco!4v1783444122433!5m2!1ses-419!2sco"
+  width="100%" 
+  height="100%" 
+  style={{ border: 0 }} 
+  allowFullScreen={true} 
+  loading="lazy" 
+  title="Ubicación Bodyhealt"
+></iframe>
             </div>
           </div>
         </section>
