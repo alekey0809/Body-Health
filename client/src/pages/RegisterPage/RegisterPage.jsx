@@ -45,10 +45,6 @@ const RegisterPage = () => {
         <Link to="/main" className="back-btn">
           <ArrowLeft size={24} />
         </Link>
-        <h1 className="register-logo">BODYHEALT</h1>
-        <div className="header-avatar">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAikDs3hWRyjulLUa_xdEdA0Lh_RulyKbbVAnxnnQYb_LQBYxn4f7LK1U5udPcHRIn5nTzSWcB6gaLVwWIq_2AsvLh8goDGEIe1ZkkrptawinYRmfLgql08je92tb2FlnfmoAYBAr4MsF6bsFJ5Vrw1TeXELQq-RpKK7DqbWWpryLa8qw8IjmggIZry4_UJT2dXL4R2A0z32muzse-pqQh1NMLkY67i1i-ZmzBvbBMF3e-TCZfL6QB-vStXy5P_E8qt4wPeFbwMseA" alt="Profile" />
-        </div>
       </header>
 
       <main className="register-main">
