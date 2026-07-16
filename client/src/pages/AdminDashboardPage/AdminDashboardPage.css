@@ -1,0 +1,221 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+.admin-sidebar {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  width: 18rem;
+  background-color: #fafaf9; /* stone-50 */
+  border-right: 1px solid var(--outline-variant);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 768px) {
+  .admin-sidebar {
+    display: flex;
+  }
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2rem 1.5rem;
+}
+
+.sidebar-header h2 {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #1c1917; /* stone-900 */
+}
+
+.sidebar-header p {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #78716c; /* stone-500 */
+  margin-top: 0.25rem;
+}
+
+.admin-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  margin-top: 3rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background-color: rgba(231, 229, 228, 0.2);
+}
+
+.admin-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--surface-container-high);
+  border: 2px solid rgba(224, 23, 23, 0.1);
+}
+
+.admin-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: #57534e; /* stone-600 */
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.nav-item:hover {
+  background-color: #f5f5f4; /* stone-100 */
+}
+
+.nav-item.active {
+  background-color: #e7e5e4; /* stone-200 */
+  color: var(--primary);
+  font-weight: 700;
+  border-right: 4px solid var(--primary);
+}
+
+.nav-item-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+@media (min-width: 768px) {
+  .admin-main {
+    margin-left: 18rem;
+  }
+}
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: rgba(250, 250, 249, 0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.admin-content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .admin-content {
+    padding: 2.5rem;
+  }
+}
+
+.page-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .page-title-section {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stat-card {
+  background-color: var(--surface-container-lowest);
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--outline-variant);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.data-table-container {
+  background-color: var(--surface-container-lowest);
+  border-radius: 0.75rem;
+  border: 1px solid var(--outline-variant);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #78716c;
+  font-weight: 700;
+  background-color: #fafaf9;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.data-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(216, 194, 191, 0.3);
+}
+
+.data-table tr:hover {
+  background-color: rgba(250, 250, 249, 0.5);
+}

@@ -1,0 +1,328 @@
+.checkout-layout {
+  min-height: 100vh;
+  background-color: var(--surface);
+  padding-bottom: 8rem;
+}
+
+.checkout-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  height: 4rem;
+  background-color: rgba(255, 248, 247, 0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(216, 194, 191, 0.3);
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.checkout-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--on-surface);
+}
+
+.checkout-main {
+  padding-top: 6rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.hero-banner {
+  margin-bottom: 2.5rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  height: 12rem;
+}
+
+.hero-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s;
+}
+
+.hero-banner:hover img {
+  transform: scale(1.05);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(255, 248, 247, 0.8), transparent);
+}
+
+.hero-badge {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+}
+
+.hero-badge span {
+  background-color: var(--tertiary);
+  color: var(--on-tertiary);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+
+@media (min-width: 1024px) {
+  .checkout-grid {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--on-surface);
+  letter-spacing: -0.025em;
+}
+
+.section-subtitle {
+  font-size: 1.125rem;
+  color: var(--on-surface-variant);
+  margin-bottom: 2rem;
+  margin-top: -1rem;
+}
+
+.form-container {
+  background-color: var(--surface-container-lowest);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  border: 1px solid rgba(216, 194, 191, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.payment-column {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.summary-card {
+  background-color: var(--surface-container-lowest);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .summary-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.summary-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.icon-box {
+  background-color: var(--primary-fixed);
+  color: var(--on-primary-fixed);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-name {
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  color: var(--on-surface);
+}
+
+.plan-duration {
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin-top: 0.25rem;
+}
+
+.summary-right {
+  text-align: right;
+}
+
+.plan-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.tax-text {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
+  font-weight: 700;
+}
+
+.methods-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.method-option {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem;
+  background-color: var(--surface-container-lowest);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  border: 1px solid var(--outline-variant);
+  transition: all 0.2s;
+}
+
+.method-option:hover {
+  background-color: var(--surface-container-low);
+}
+
+.method-option.selected {
+  border-color: var(--primary);
+  background-color: rgba(255, 218, 214, 0.2);
+}
+
+.hidden-radio {
+  display: none;
+}
+
+.radio-circle {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--outline);
+  border-radius: 50%;
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.method-option.selected .radio-circle {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.method-option.selected .radio-circle::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--on-primary);
+  border-radius: 50%;
+}
+
+.method-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+.icon-default {
+  color: var(--on-surface-variant);
+}
+
+.icon-selected {
+  color: var(--primary);
+}
+
+.card-form {
+  padding: 1rem;
+  background-color: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.75rem;
+  margin-top: -0.5rem;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+
+.security-banner {
+  background-color: var(--surface-container);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.security-banner p {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  line-height: 1.625;
+}
+
+.checkout-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem;
+  background-color: rgba(255, 248, 247, 0.9);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(216, 194, 191, 0.3);
+  z-index: 50;
+}
+
+.footer-container {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.pay-button {
+  width: 100%;
+  padding: 1.25rem;
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.footer-disclaimer {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 500;
+}

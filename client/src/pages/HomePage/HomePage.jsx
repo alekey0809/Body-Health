@@ -70,14 +70,14 @@ const HomePage = () => {
             {/* 🔀 CONTROL DE ACCESO DINÁMICO SEGÚN LA SESIÓN */}
             <div className="home-button-container">
               {!user ? (
-                <>
-                  <Link to="/register" className="home-btn-primary">
-                    Empieza Hoy
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                  <Link to="/checkout" className="btn-primary" style={{ width: 'auto', padding: '1rem 2rem' }}>
+                    Empieza Hoy (Comprar Plan)
                   </Link>
-                  <Link to="/login" className="home-btn-secondary">
+                  <Link to="/login" className="btn-secondary" style={{ width: 'auto', padding: '1rem 2rem' }}>
                     Ya tengo cuenta
                   </Link>
-                </>
+                </div>
               ) : (
                 <Link to="/dashboard" className="home-btn-primary" style={{ backgroundColor: '#231918' }}>
                   Ir al Dashboard ({user.u_nombres || 'Usuario'})
@@ -154,10 +154,16 @@ const HomePage = () => {
                 <li><span className="material-symbols-outlined icon-check">check_circle</span> Lockers privados</li>
               </ul>
               {!user ? (
-                <Link to="/register" className="plan-btn-secondary">Seleccionar</Link>
-              ) : (
-                <Link to="/dashboard" className="plan-btn-secondary">Adquirir</Link>
-              )}
+        <Link 
+          to="/inscripcion" 
+          state={{ planNombre: 'Plan Trimestral', planPrecio: 37500, duracion: 90 }}
+          className="plan-btn-primary"
+        >
+          Seleccionar
+        </Link>
+      ) : (
+        <Link to="/dashboard" className="plan-btn-primary">Adquirir</Link>
+      )}
             </div>
 
             {/* Plan Trimestral (Destacado) */}
