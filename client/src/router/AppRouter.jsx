@@ -10,6 +10,9 @@ import PaymentConfirmationPage from "../pages/PaymentConfirmationPage/PaymentCon
 import Navbar from "../components/Navbar/Navbar";
 import { AuthContext } from "../context/AuthContext";
 
+import PlansCatalogPage from "../pages/PlansCatalogPage/PlansCatalogPage";
+import EditProfilePage from "../pages/EditProfilePage/EditProfilePage";
+
 // Componente para proteger rutas privadas generales (ej. Dashboard)
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -21,16 +24,17 @@ const PrivateRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Cargando...</div>;
-  // Solo permitir si el rol es mayor a 1 (ej. idRol 2 = Admin)
-  // Ajustar la lógica del rol según cómo venga de la BD (asumiendo idRol === 2 para admin)
-  return (user && user.idRol === 2) ? children : <Navigate to="/dashboard" replace />;
+  // Permitir acceso solo si u_r_id === 1 (Administrador)
+  return (user && user.u_r_id === 1) ? children : <Navigate to="/dashboard" replace />;
 };
 
 // Componente para evitar que usuarios logueados vean login/registro
 const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Cargando...</div>;
-  return !user ? children : <Navigate to="/dashboard" replace />;
+  if (!user) return children;
+  // Si ya tiene sesión activa, redirigir según su rol
+  return <Navigate to={user.u_r_id === 1 ? '/admin' : '/dashboard'} replace />;
 };
 
 const AppRouter = () => {
@@ -47,9 +51,11 @@ const AppRouter = () => {
         {/* Rutas de Flujo de Compra (Públicas y Privadas) */}
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/payment-confirmation" element={<PaymentConfirmationPage />} />
-
+        <Route path="/planes" element={<PlansCatalogPage />} />
+    
         {/* Rutas Privadas (Solo logueados) */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/perfil" element={<PrivateRoute><EditProfilePage /></PrivateRoute>} />
         
         {/* Rutas Privadas de Administrador */}
         <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />

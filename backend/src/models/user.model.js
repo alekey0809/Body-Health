@@ -5,7 +5,7 @@ export const UserModel = {
     // Buscar un usuario por su correo electrónico (Para el Login)
     findByEmail: async (email) => {
         const query = `
-            SELECT u_id, u_nombres, u_apellidos, u_correo_electronico, u_contrasena, u_eg_id 
+            SELECT u_id, u_nombres, u_apellidos, u_correo_electronico, u_contrasena, u_eg_id, u_r_id 
             FROM usuario 
             WHERE u_correo_electronico = $1
         `;

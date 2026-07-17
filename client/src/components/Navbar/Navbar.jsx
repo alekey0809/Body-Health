@@ -37,7 +37,7 @@ const Navbar = () => {
         <div className="navbar-actions">
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-               <Link to={user.idRol === 2 ? "/admin" : "/dashboard"} className="nav-link" style={{ fontWeight: '700' }}>
+               <Link to={user.u_r_id === 1 ? "/admin" : "/dashboard"} className="nav-link" style={{ fontWeight: '700' }}>
                  Dashboard
                </Link>
                <button onClick={handleLogout} className="logout-text-btn">Salir</button>

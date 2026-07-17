@@ -1,8 +1,19 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { LogOut, Dumbbell, Calendar, Target, Activity } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { User, Activity, CreditCard, CalendarCheck, Settings, Dumbbell } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Link, useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
+
+const dataGrafica = [
+  { name: 'Lun', calorias: 400 },
+  { name: 'Mar', calorias: 300 },
+  { name: 'Mie', calorias: 550 },
+  { name: 'Jue', calorias: 200 },
+  { name: 'Vie', calorias: 600 },
+  { name: 'Sab', calorias: 700 },
+  { name: 'Dom', calorias: 350 },
+];
 
 const DashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
@@ -13,123 +24,118 @@ const DashboardPage = () => {
     navigate('/login');
   };
 
+  if (!user) return <div className="dashboard-loading">Cargando datos del usuario...</div>;
+
   return (
-    <div className="dashboard-wrapper">
-      <header className="dashboard-header">
-        <div className="header-brand">
-          <Dumbbell className="brand-icon" />
-          <h1 className="dashboard-logo">BODYHEALT</h1>
+    <div className="dashboard-layout">
+      {/* Dashboard Topbar */}
+      <header className="dashboard-topbar">
+        <div className="topbar-left">
+          <Dumbbell className="topbar-logo-icon" />
+          <h1 className="topbar-logo-text">BODYHEALT</h1>
         </div>
-        <div className="header-actions">
-          <div className="user-profile">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDObkVnZ7kIfgJgJBqgnx1ICfy-d7ah8ZiYeBpyCMqzDXzkfu6TnBWKubdU8x_ZR-240Dbt5nHtmYvWrs3Jq2DyeDCmL5lZbLlEcFB5yg57OUGOlmw23rkg0eKkJ5uGfR9J2EiUuHDohXbTsFpCmPHx5FMEUyBduh_JiGSM_6JLcR1mXFbHgdCDTvuJg7w7GeIJP0hIXFFjLzoJ7-As4OLNGt2a0OAKTVbThkBTUrWxMTcZaDJNNFrlDbZxb15Zj3rkDOcJZx0wgG0" alt="Avatar" className="user-avatar" />
-            <div className="user-info-text">
-              <span className="user-name">{user?.nombre || 'Usuario'}</span>
-              <span className="user-role">Miembro Premium</span>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="btn-logout">
-            <LogOut size={18} />
-            Salir
-          </button>
+        <div className="topbar-right">
+          <Link to="/planes" className="btn-secondary small-btn">Ver Planes</Link>
+          <button onClick={handleLogout} className="logout-text-btn">Salir</button>
         </div>
       </header>
 
-      <main className="dashboard-main">
-        <section className="welcome-section">
-          <div className="welcome-text">
-            <h2>Bienvenido a tu Curaduría, {user?.nombre?.split(' ')[0] || 'Atleta'}</h2>
-            <p>Aquí tienes el resumen de tu progreso y beneficios de esta semana.</p>
-          </div>
-        </section>
-
-        <section className="stats-grid">
-          <div className="glass-container stat-card">
-            <div className="stat-icon-wrapper red-wrapper">
-              <Activity size={24} />
+      <main className="dashboard-main-content">
+        <h2 className="dashboard-welcome">¡Hola, {user.nombre.split(' ')[0]}! 👋</h2>
+        
+        <div className="dashboard-grid">
+          
+          {/* 1. Datos Personales */}
+          <div className="dash-card">
+            <div className="card-header">
+              <User className="card-icon" /> 
+              <h3>Mis Datos</h3>
             </div>
-            <div className="stat-info">
-              <span className="stat-value">12</span>
-              <span className="stat-label">Clases Asistidas</span>
-            </div>
-          </div>
-          <div className="glass-container stat-card">
-            <div className="stat-icon-wrapper orange-wrapper">
-              <Target size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">4</span>
-              <span className="stat-label">Metas Cumplidas</span>
-            </div>
-          </div>
-          <div className="glass-container stat-card">
-            <div className="stat-icon-wrapper yellow-wrapper">
-              <Calendar size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">Trimestral</span>
-              <span className="stat-label">Plan Activo</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="dashboard-content-grid">
-          <div className="glass-container content-card">
-            <h3>Próximas Sesiones</h3>
-            <div className="session-list">
-              <div className="session-item">
-                <div className="session-time">
-                  <span className="time-strong">07:00 AM</span>
-                  <span className="date-weak">Mañana</span>
-                </div>
-                <div className="session-details">
-                  <h4>Yoga Flow Avanzado</h4>
-                  <p>Salón Zen • Elena Valery</p>
-                </div>
-                <button className="btn-secondary small-btn">Cancelar</button>
+            <div className="card-body personal-data">
+              <div className="data-row">
+                <span className="data-label">Nombre:</span>
+                <span className="data-value">{user.nombre}</span>
               </div>
-              <div className="session-item">
-                <div className="session-time">
-                  <span className="time-strong">18:30 PM</span>
-                  <span className="date-weak">Jueves</span>
-                </div>
-                <div className="session-details">
-                  <h4>Powerlifting Masterclass</h4>
-                  <p>Zona Fuerza • Marcus Thorne</p>
-                </div>
-                <button className="btn-secondary small-btn">Cancelar</button>
+              <div className="data-row">
+                <span className="data-label">Correo:</span>
+                <span className="data-value">{user.correo}</span>
               </div>
+              <div className="data-row">
+                <span className="data-label">Teléfono:</span>
+                <span className="data-value">{user.contacto || 'No registrado'}</span>
+              </div>
+              <button onClick={() => navigate('/perfil')} className="btn-secondary card-btn">Editar Perfil</button>
             </div>
-            <button className="btn-primary full-btn" style={{ marginTop: '1.5rem' }}>Reservar Nueva Sesión</button>
           </div>
 
-          <div className="glass-container content-card">
-            <h3>Tu Progreso Físico</h3>
-            <div className="progress-metrics">
-              <div className="metric-group">
-                <div className="metric-header">
-                  <span>Resistencia Cardiovascular</span>
-                  <span>78%</span>
-                </div>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{ width: '78%', background: 'linear-gradient(90deg, #e01717, #f66b0e)' }}></div>
-                </div>
-              </div>
-              <div className="metric-group">
-                <div className="metric-header">
-                  <span>Fuerza Core</span>
-                  <span>65%</span>
-                </div>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{ width: '65%', background: 'linear-gradient(90deg, #f66b0e, #ffcc00)' }}></div>
-                </div>
-              </div>
+          {/* 2. Gráficas (Salud/Progreso) */}
+          <div className="dash-card dash-card-wide">
+            <div className="card-header">
+              <Activity className="card-icon" /> 
+              <h3>Progreso de Actividad</h3>
             </div>
-            <div className="coach-note">
-              <strong>Nota del Entrenador:</strong> Excelente mejora en tu ritmo cardíaco en recuperación. Sigamos trabajando la fuerza de agarre.
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dataGrafica}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" />
+                  <XAxis dataKey="name" stroke="var(--on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}
+                    itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                  />
+                  <Line type="monotone" dataKey="calorias" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        </section>
+
+          {/* 3. Estado de Pagos */}
+          <div className="dash-card">
+            <div className="card-header">
+              <CreditCard className="card-icon" /> 
+              <h3>Estado de Pagos</h3>
+            </div>
+            <div className="card-body">
+              <div className="payment-status-box">
+                <div>
+                  <p className="payment-plan">Membresía Trimestral</p>
+                  <p className="payment-date">Vence: 15/Ago/2026</p>
+                </div>
+                <span className="status-badge-green">Al día</span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <button className="btn-secondary card-btn" style={{ flex: 1 }}>Historial</button>
+                <button onClick={() => navigate('/planes')} className="btn-primary card-btn" style={{ flex: 1 }}>Renovar</button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Control de Asistencias */}
+          <div className="dash-card">
+            <div className="card-header">
+              <CalendarCheck className="card-icon" /> 
+              <h3>Mis Asistencias</h3>
+            </div>
+            <div className="card-body">
+              <ul className="attendance-list">
+                <li className="attendance-item">
+                  <span className="att-day">Hoy</span>
+                  <span className="att-time">10:30 AM</span>
+                </li>
+                <li className="attendance-item">
+                  <span className="att-day">Ayer</span>
+                  <span className="att-time">09:15 AM</span>
+                </li>
+                <li className="attendance-item">
+                  <span className="att-day">Hace 3 días</span>
+                  <span className="att-time">06:00 PM</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+        </div>
       </main>
     </div>
   );

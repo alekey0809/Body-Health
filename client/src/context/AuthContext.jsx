@@ -28,7 +28,19 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setUser(response.data.user);
-        navigate('/dashboard');
+
+        // --- DIAGNÓSTICO: borrar después ---
+        console.log('✅ LOGIN RESPONSE USER:', response.data.user);
+        console.log('✅ u_r_id value:', response.data.user?.u_r_id);
+        console.log('✅ Es admin?', response.data.user?.u_r_id === 1);
+        // ------------------------------------
+
+        // Redirigir según el rol: u_r_id === 1 = Administrador
+        if (response.data.user?.u_r_id === 1) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
         return true;
       }
     } catch (error) {
@@ -54,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
-    navigate('/HomePage');
+    navigate('/main');
   };
 
   return (
