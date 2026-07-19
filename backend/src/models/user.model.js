@@ -13,6 +13,20 @@ export const UserModel = {
         return rows[0]; 
     },
 
+    // Actualizar perfil del usuario (nombre, apellidos, contacto)
+    updateProfile: async (userId, { nombres, apellidos, contacto }) => {
+        const query = `
+            UPDATE usuario
+            SET u_nombres = $1,
+                u_apellidos = $2,
+                u_numero_contacto = $3
+            WHERE u_id = $4
+            RETURNING u_id, u_nombres, u_apellidos, u_correo_electronico, u_numero_contacto, u_r_id
+        `;
+        const { rows } = await pool.query(query, [nombres, apellidos, contacto, userId]);
+        return rows[0];
+    },
+
     // Crear un nuevo usuario (Para el Registro)
     create: async ({ nombres, apellidos, idTipoDoc, numeroDoc, correo, contrasena, idRol, contacto, idEstadoGen }) => {
         

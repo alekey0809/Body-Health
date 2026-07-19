@@ -1,3 +1,5 @@
 .env
 *.log
 cambios documentos.txt
+.agent/skills/skill.md
+.agent/skills/react-best-practices/SKILL.md

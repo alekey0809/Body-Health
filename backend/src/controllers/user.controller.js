@@ -69,3 +69,39 @@ export const login = async (req, res) => {
         return res.status(500).json({ ok: false, message: "Error interno en el servidor" });
     }
 };
+
+// CONTROLADOR DE ACTUALIZACIÓN DE PERFIL
+export const updateProfile = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { nombres, apellidos, contacto } = req.body;
+
+        if (!nombres || !apellidos) {
+            return res.status(400).json({ ok: false, message: "El nombre y apellido son requeridos." });
+        }
+
+        // contacto es opcional, si no viene se envía null
+        const contactoFinal = contacto?.trim() || null;
+
+        const updatedUser = await UserModel.updateProfile(userId, { nombres, apellidos, contacto: contactoFinal });
+
+        if (!updatedUser) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado." });
+        }
+
+        return res.status(200).json({
+            ok: true,
+            message: "Perfil actualizado correctamente.",
+            user: {
+                id: updatedUser.u_id,
+                nombre: `${updatedUser.u_nombres} ${updatedUser.u_apellidos}`,
+                correo: updatedUser.u_correo_electronico,
+                contacto: updatedUser.u_numero_contacto,
+                u_r_id: updatedUser.u_r_id
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, message: "Error interno al actualizar el perfil." });
+    }
+};
