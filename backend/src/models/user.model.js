@@ -12,7 +12,8 @@ export const UserModel = {
         const { rows } = await pool.query(query, [email]);
         return rows[0]; 
     },
-
+   // pruebas que realizo normalmente :3
+   
     // Actualizar perfil del usuario (nombre, apellidos, contacto)
     updateProfile: async (userId, { nombres, apellidos, contacto }) => {
         const query = `
