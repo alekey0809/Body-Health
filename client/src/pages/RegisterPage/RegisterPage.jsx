@@ -13,7 +13,7 @@ const RegisterPage = () => {
     numeroDoc: '',
     correo: '',
     contrasena: '',
-    idRol: 1, // Cliente por defecto
+    idRol: 2, // Cliente por defecto
     contacto: '',
     idEstadoGen: 1 // Activo por defecto
   });
