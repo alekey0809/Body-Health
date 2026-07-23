@@ -153,50 +153,6 @@ const CheckoutPage = () => {
                 </div>
               </section>
 
-              <section className="payment-methods-section">
-                <h2 className="section-title">Método de pago</h2>
-                <div className="methods-container">
-                  <label className={`method-option ${paymentMethod === 'card' ? 'selected' : ''}`}>
-                    <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="hidden-radio" />
-                    <div className="radio-circle"></div>
-                    <div className="method-info">
-                      <CreditCard size={20} className={paymentMethod === 'card' ? 'icon-selected' : 'icon-default'} />
-                      <span>Tarjeta de Crédito o Débito</span>
-                    </div>
-                  </label>
-
-                  {/* UI sencilla de tarjeta si está seleccionada */}
-                  {paymentMethod === 'card' && (
-                    <div className="card-form">
-                      <div className="form-group">
-                        <input type="text" placeholder="Número de Tarjeta" required />
-                      </div>
-                      <div className="form-row" style={{ marginTop: '1rem' }}>
-                        <div className="form-group">
-                          <input type="text" placeholder="MM/YY" required />
-                        </div>
-                        <div className="form-group">
-                          <input type="text" placeholder="CVC" required />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <label className={`method-option ${paymentMethod === 'pse' ? 'selected' : ''}`}>
-                    <input type="radio" name="payment" value="pse" checked={paymentMethod === 'pse'} onChange={() => setPaymentMethod('pse')} className="hidden-radio" />
-                    <div className="radio-circle"></div>
-                    <div className="method-info">
-                      <Landmark size={20} className={paymentMethod === 'pse' ? 'icon-selected' : 'icon-default'} />
-                      <span>PSE (Transferencia Bancaria)</span>
-                    </div>
-                  </label>
-                </div>
-              </section>
-
-              <div className="security-banner">
-                <ShieldCheck size={20} color="var(--tertiary)" />
-                <p>Tus pagos están protegidos con encriptación de grado militar. No almacenamos los datos sensibles de tus tarjetas.</p>
-              </div>
             </div>
 
           </div>

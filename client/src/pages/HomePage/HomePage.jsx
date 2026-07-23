@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin, Clock, CheckCircle, ArrowUpRight, Share2, AtSign, Phone } from 'lucide-react';
+import { getPlanes } from '../../services/planService';
 import './HomePage.css';
 
 const HomePage = () => {
+  const [planes, setPlanes] = useState([]);
+
+  useEffect(() => {
+    const fetchPlanes = async () => {
+      const data = await getPlanes();
+      setPlanes(data);
+    };
+    fetchPlanes();
+  }, []);
+
   return (
     <div className="home-page-wrapper">
       <main>
@@ -104,64 +115,41 @@ const HomePage = () => {
             </div>
             
             <div className="plans-grid">
-              {/* Mensual */}
-              <div className="plan-card-standard">
-                <span className="plan-label">Individual</span>
-                <h3 className="plan-name">Mensual</h3>
-                <div className="plan-price-box">
-                  <span className="plan-price">$45</span>
-                  <span className="plan-period">/ mes</span>
-                </div>
-                <ul className="plan-features-list">
-                  <li><CheckCircle className="check-icon" size={18} /> Acceso total 24/7</li>
-                  <li><CheckCircle className="check-icon" size={18} /> Evaluación física inicial</li>
-                  <li><CheckCircle className="check-icon" size={18} /> Lockers privados</li>
-                </ul>
-                <Link to="/checkout" className="plan-btn-secondary">Seleccionar</Link>
-              </div>
-
-              {/* Trimestral (Featured) */}
-              <div className="plan-card-featured">
-                <div className="featured-badge">Más Elegido</div>
-                <span className="plan-label">Compromiso</span>
-                <h3 className="plan-name">Trimestral</h3>
-                <div className="plan-price-box">
-                  <span className="plan-price">$120</span>
-                  <span className="plan-period">/ 3 meses</span>
-                </div>
-                <ul className="plan-features-list">
-                  <li><CheckCircle className="check-icon" size={18} /> Todos los beneficios Mensuales</li>
-                  <li><CheckCircle className="check-icon" size={18} /> 2 Invitaciones p/mes</li>
-                  <li><CheckCircle className="check-icon" size={18} /> 1 Sesión de Coaching</li>
-                </ul>
-                <Link to="/checkout" className="plan-btn-primary">Seleccionar</Link>
-              </div>
-
-              {/* Semestral */}
-              <div className="plan-card-standard">
-                <span className="plan-label">Legado</span>
-                <h3 className="plan-name">Semestral</h3>
-                <div className="plan-price-box">
-                  <span className="plan-price">$210</span>
-                  <span className="plan-period">/ 6 meses</span>
-                </div>
-                <ul className="plan-features-list">
-                  <li><CheckCircle className="check-icon" size={18} /> Beneficios Trimestrales</li>
-                  <li><CheckCircle className="check-icon" size={18} /> Acceso VIP Lounge</li>
-                  <li><CheckCircle className="check-icon" size={18} /> Plan Nutricional Mensual</li>
-                </ul>
-                <Link to="/checkout" className="plan-btn-secondary">Seleccionar</Link>
-              </div>
+              {planes.slice(0, 3).map((plan, index) => {
+                const isFeatured = index === 1;
+                const label = index === 0 ? 'Individual' : isFeatured ? 'Compromiso' : 'Legado';
+                const durationText = plan.pe_duracion_dias ? `/ ${plan.pe_duracion_dias} días` : '/ mes';
+                return (
+                  <div key={plan.pe_id} className={isFeatured ? "plan-card-featured" : "plan-card-standard"}>
+                    {isFeatured && <div className="featured-badge">Más Elegido</div>}
+                    <span className="plan-label">{label}</span>
+                    <h3 className="plan-name">{plan.pe_nombre}</h3>
+                    <div className="plan-price-box">
+                      <span className="plan-price">${parseFloat(plan.pe_precio_base || 0).toLocaleString('es-CO')}</span>
+                      <span className="plan-period">{durationText}</span>
+                    </div>
+                    <ul className="plan-features-list">
+                      <li><CheckCircle className="check-icon" size={18} /> Acceso total 24/7</li>
+                      <li><CheckCircle className="check-icon" size={18} /> Evaluación física inicial</li>
+                      <li><CheckCircle className="check-icon" size={18} /> Lockers privados</li>
+                    </ul>
+                    <Link to={`/checkout?planId=${plan.pe_id}`} className={isFeatured ? "plan-btn-primary" : "plan-btn-secondary"}>
+                      Seleccionar
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
             
             <div className="plans-footer">
-              <a href="#" className="view-more-link">
-                <span>Ver más planes</span>
+              <Link to="/planes" className="view-more-link">
+                <span>mas planes</span>
                 <ArrowRight size={16} className="arrow-icon" />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
+
 
         {/* Noticias Section */}
         <section className="home-news" id="noticias">

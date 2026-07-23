@@ -69,6 +69,95 @@
   text-underline-offset: 4px;
 }
 
+.user-dashboard-hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--on-surface);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.user-dashboard-hamburger-btn:hover {
+  background-color: var(--surface-container-high);
+}
+
+@media (min-width: 768px) {
+  .user-dashboard-hamburger-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* User Mobile Drawer - Consumes 50vh vertical height, strictly the links (pagos, planes, perfil, asistencia) */
+.user-mobile-drawer {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  z-index: 45;
+  background-color: rgba(255, 248, 247, 0.98);
+  backdrop-filter: blur(16px);
+  border-bottom: 2px solid var(--outline-variant);
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.25s ease-out forwards;
+}
+
+.user-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-evenly;
+  gap: 0.5rem;
+}
+
+.user-mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--on-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-mobile-nav-link:hover {
+  background-color: var(--surface-container);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.user-mobile-nav-link.danger {
+  color: var(--error);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  margin-top: auto;
+  padding: 0.5rem 1.25rem;
+}
+
+
 /* Main Content */
 .dashboard-main-content {
   flex-grow: 1;

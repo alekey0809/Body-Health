@@ -228,80 +228,9 @@ const RegistroPago = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Subsección 2: Métodos de Pago (Paso 2) */}
-                        <div className="form-segment">
-                            <h3 className="form-segment-title">2. Método de Pago</h3>
-                            
-                            <div className="payment-selector-list">
-                                {/* Tarjeta */}
-                                <label 
-                                    className={`payment-card-label ${formData.paymentMethod === 'tarjeta' ? 'selected' : ''}`}
-                                    onClick={() => handlePaymentSelect('tarjeta')}
-                                >
-                                    <input 
-                                        type="radio" 
-                                        name="payment" 
-                                        checked={formData.paymentMethod === 'tarjeta'} 
-                                        onChange={() => {}} 
-                                        style={{ display: 'none' }} 
-                                    />
-                                    <div className="custom-radio">
-                                        <div className="radio-center-dot"></div>
-                                    </div>
-                                    <div className="payment-option-content">
-                                        <div className="payment-brand-align">
-                                            <span className="material-symbols-outlined">credit_card</span>
-                                            <span className="payment-text">Tarjeta de Crédito o Débito</span>
-                                        </div>
-                                    </div>
-                                </label>
-                                {/* PSE */}
-                                <label 
-                                    className={`payment-card-label ${formData.paymentMethod === 'pse' ? 'selected' : ''}`}
-                                    onClick={() => handlePaymentSelect('pse')}
-                                >
-                                    <input 
-                                        type="radio" 
-                                        name="payment" 
-                                        checked={formData.paymentMethod === 'pse'} 
-                                        onChange={() => {}} 
-                                        style={{ display: 'none' }} 
-                                    />
-                                    <div className="custom-radio">
-                                        <div className="radio-center-dot"></div>
-                                    </div>
-                                    <div className="payment-option-content">
-                                        <div className="payment-brand-align">
-                                            <span className="material-symbols-outlined">account_balance</span>
-                                            <span className="payment-text">PSE (Transferencia Bancaria)</span>
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-
-                            {/* Banner de seguridad militar */}
-                            <div className="military-banner">
-                                <span className="material-symbols-outlined">verified_user</span>
-                                <p>Tus pagos están protegidos con encriptación de grado militar. No almacenamos datos sensibles.</p>
-                            </div>
-                        </div>
-
-                        {/* Botón de Envío */}
-                        <div>
-                            <button className="btn-pay-submit" type="submit">
-                                Confirmar Registro y Pagar $37.500
-                                <span className="material-symbols-outlined">lock</span>
-                            </button>
-                        </div>
                     </form>
                 </section>
             </main>
-
-            {/* Barra Fija Inferior Comercial */}
-            <div className="bottom-merchant-bar">
-                <p className="merchant-text">Procesado de forma segura por Bodyhealt Payment Gateway</p>
-            </div>
         </div>
     );
 };

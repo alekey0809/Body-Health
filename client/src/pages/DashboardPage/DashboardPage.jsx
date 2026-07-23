@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Settings, Dumbbell } from 'lucide-react';
+import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
@@ -18,10 +18,25 @@ const dataGrafica = [
 const DashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleMobileLinkClick = (action) => {
+    setIsMobileMenuOpen(false);
+    if (action === 'planes') {
+      navigate('/planes');
+    } else if (action === 'perfil') {
+      navigate('/perfil');
+    } else {
+      const element = document.getElementById(action);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   if (!user) return <div className="dashboard-loading">Cargando datos del usuario...</div>;
@@ -35,10 +50,66 @@ const DashboardPage = () => {
           <h1 className="topbar-logo-text">BODYHEALT</h1>
         </div>
         <div className="topbar-right">
-          <Link to="/planes" className="btn-secondary small-btn">Ver Planes</Link>
-          <button onClick={handleLogout} className="logout-text-btn">Salir</button>
+          <Link to="/planes" className="btn-secondary small-btn desktop-only">Ver Planes</Link>
+          <button onClick={handleLogout} className="logout-text-btn desktop-only">Salir</button>
+          
+          {/* Toggle Hamburger Button */}
+          <button 
+            className="user-dashboard-hamburger-btn" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Hamburger Menu - Consumes 50vh vertical height, strictly the requested links */}
+      {isMobileMenuOpen && (
+        <div className="user-mobile-drawer">
+          <nav className="user-mobile-nav">
+            <button 
+              onClick={() => handleMobileLinkClick('pagos')} 
+              className="user-mobile-nav-link"
+            >
+              <CreditCard size={20} />
+              <span>Pagos</span>
+            </button>
+
+            <button 
+              onClick={() => handleMobileLinkClick('planes')} 
+              className="user-mobile-nav-link"
+            >
+              <Dumbbell size={20} />
+              <span>Planes</span>
+            </button>
+
+            <button 
+              onClick={() => handleMobileLinkClick('perfil')} 
+              className="user-mobile-nav-link"
+            >
+              <User size={20} />
+              <span>Perfil</span>
+            </button>
+
+            <button 
+              onClick={() => handleMobileLinkClick('asistencia')} 
+              className="user-mobile-nav-link"
+            >
+              <CalendarCheck size={20} />
+              <span>Asistencia</span>
+            </button>
+
+            <button 
+              onClick={handleLogout} 
+              className="user-mobile-nav-link danger"
+            >
+              <LogOut size={20} />
+              <span>Salir</span>
+            </button>
+          </nav>
+        </div>
+      )}
 
       <main className="dashboard-main-content">
         <h2 className="dashboard-welcome">¡Hola, {user.nombre.split(' ')[0]}! 👋</h2>
@@ -46,7 +117,7 @@ const DashboardPage = () => {
         <div className="dashboard-grid">
           
           {/* 1. Datos Personales */}
-          <div className="dash-card">
+          <div className="dash-card" id="perfil">
             <div className="card-header">
               <User className="card-icon" /> 
               <h3>Mis Datos</h3>
@@ -69,7 +140,7 @@ const DashboardPage = () => {
           </div>
 
           {/* 2. Gráficas (Salud/Progreso) */}
-          <div className="dash-card dash-card-wide">
+          <div className="dash-card dash-card-wide" id="progreso">
             <div className="card-header">
               <Activity className="card-icon" /> 
               <h3>Progreso de Actividad</h3>
@@ -91,7 +162,7 @@ const DashboardPage = () => {
           </div>
 
           {/* 3. Estado de Pagos */}
-          <div className="dash-card">
+          <div className="dash-card" id="pagos">
             <div className="card-header">
               <CreditCard className="card-icon" /> 
               <h3>Estado de Pagos</h3>
@@ -112,7 +183,7 @@ const DashboardPage = () => {
           </div>
 
           {/* 4. Control de Asistencias */}
-          <div className="dash-card">
+          <div className="dash-card" id="asistencia">
             <div className="card-header">
               <CalendarCheck className="card-icon" /> 
               <h3>Mis Asistencias</h3>
@@ -142,3 +213,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+
