@@ -102,6 +102,57 @@ export const updateProfile = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ ok: false, message: "Error interno al actualizar el perfil." });
+    };
+}
+// CONTROLADOR PARA OBTENER TODOS LOS USUARIOS (ADMIN)
+export const getUsers = async (req, res) => {
+    try {
+        const users = await UserModel.getAll();
+        return res.json(users);
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error.message);
+        return res.status(500).json({ ok: false, message: "Error al obtener usuarios", error: error.message });
     }
 };
+
+// CONTROLADOR PARA OBTENER UN USUARIO POR ID (ADMIN)
+export const getUserById = async (req, res) => {
+    try {
+        const user = await UserModel.getById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+        }
+        return res.json(user);
+    } catch (error) {
+        console.error('Error al obtener usuario:', error.message);
+        return res.status(500).json({ ok: false, message: "Error al obtener usuario", error: error.message });
+    }
+};
+
+// CONTROLADOR PARA ACTUALIZAR USUARIO DESDE ADMIN
+export const updateUserAdmin = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const updatedUser = await UserModel.updateAdmin(userId, req.body);
+        if (!updatedUser) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+        }
+        return res.json({ ok: true, message: "Usuario actualizado correctamente", user: updatedUser });
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error.message);
+        return res.status(500).json({ ok: false, message: "Error al actualizar usuario", error: error.message });
+    }
+};
+
+// CONTROLADOR PARA ELIMINAR USUARIO (ADMIN)
+export const deleteUser = async (req, res) => {
+    try {
+        const deleted = await UserModel.delete(req.params.id);
+        if (!deleted) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+        }
+        return res.json({ ok: true, message: "Usuario eliminado correctamente", id: req.params.id });
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error.message);
+        return res.status(500).json({ ok: false, message: "Error al eliminar usuario", error: error.message });
+    }};

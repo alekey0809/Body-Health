@@ -1,90 +1,64 @@
-import React, { useState } from 'react';
-import { UserPlus, Search, Edit, Trash2, Shield, User, X } from 'lucide-react';
-
-const initialUsers = [
-  {
-    id: 1,
-    name: 'Laura Gómez',
-    email: 'laura.gomez@gmail.com',
-    role: 'Cliente',
-    plan: 'Plan Pro',
-    joinDate: '2026-01-15',
-    status: 'Activo',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 2,
-    name: 'Roberto Silva',
-    email: 'roberto.s@hotmail.com',
-    role: 'Cliente',
-    plan: 'Plan VIP Performance',
-    joinDate: '2026-03-10',
-    status: 'Activo',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 3,
-    name: 'Elena Valery',
-    email: 'elena.valery@bodyhealth.com',
-    role: 'Entrenador',
-    plan: 'Staff Master',
-    joinDate: '2025-08-01',
-    status: 'Activo',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWT77s3Ob6BZ_xenDfI9nbBvd2AGw67CGVJCU-W2CPtT8tD9gJgGsB66E1HwSsLr5m-t7IBruM8st_NjQ0G2KYOUam-uugnG1SfT9n7xqmusBakEr0-ZrtMi-l5glHCly8ok8obLj8FwrMgOJmf4xe4Hyx1tKpyZ4ViEvVyKYfBPL-2jibpvKhKWRa0FF6QsNs_tiW4mdn7CqeVRaXGm2nPkS8asHJDOpPGM5gsJWUWEq_gW6BK2e5Tu1yWJoSGlyo14K7YNxXwRY'
-  },
-  {
-    id: 4,
-    name: 'Ana Belén',
-    email: 'anabelen@yahoo.com',
-    role: 'Cliente',
-    plan: 'Plan Básico',
-    joinDate: '2026-05-20',
-    status: 'Pendiente',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 5,
-    name: 'Admin Principal',
-    email: 'admin@bodyhealth.com',
-    role: 'Admin',
-    plan: 'Acceso Total',
-    joinDate: '2025-01-01',
-    status: 'Activo',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvnaVFB5f-Np0XscOQ7ivAuKVccN4UGkoBugiTz10Q0CcrMmS9DZo0nbHV0wTRehUsDwhHgsBWis1QiMakmZeTOryDfE9hHjraMOH2rKC8UvITiGAitQTQ7DLUIOOkkacGGk2FeJkZAAh5iuvpRF-WDpP7A--mjV6X7KjUkQP9fOP3GrEgvguKxZlDKwaJqoo7eowjmKSeqIKQQJJvOpG6nKyeeqkjKyDdK_Z1whhbpbrnzx776gIPXtKillplANYbWAu6lvWVVZI'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { UserPlus, Search, Edit, Trash2, X } from 'lucide-react';
+import { getUsuarios, createUsuario, updateUsuarioAdmin, deleteUsuario } from '../../../services/userService';
 
 const UsuariosView = () => {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('Todos');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'Cliente',
-    plan: 'Plan Pro',
-    joinDate: new Date().toISOString().split('T')[0],
-    status: 'Activo',
-    avatar: ''
+    u_nombres: '',
+    u_apellidos: '',
+    u_td_id: 1,
+    u_numero_documento: '',
+    u_correo_electronico: '',
+    u_contrasena: '123456',
+    u_r_id: 1,
+    u_numero_contacto: '',
+    u_eg_id: 1
   });
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    const data = await getUsuarios();
+    setUsers(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const handleOpenModal = (user = null) => {
     if (user) {
       setEditingUser(user);
-      setFormData({ ...user });
+      setFormData({
+        u_nombres: user.u_nombres || user.name?.split(' ')[0] || '',
+        u_apellidos: user.u_apellidos || user.name?.split(' ').slice(1).join(' ') || '',
+        u_td_id: user.u_td_id || 1,
+        u_numero_documento: user.u_numero_documento || '',
+        u_correo_electronico: user.u_correo_electronico || user.email || '',
+        u_contrasena: '',
+        u_r_id: user.u_r_id || (user.role === 'Admin' ? 3 : user.role === 'Entrenador' ? 2 : 1),
+        u_numero_contacto: user.u_numero_contacto || '',
+        u_eg_id: user.u_eg_id !== undefined ? user.u_eg_id : (user.status === 'Activo' ? 1 : 0)
+      });
     } else {
       setEditingUser(null);
       setFormData({
-        name: '',
-        email: '',
-        role: 'Cliente',
-        plan: 'Plan Pro',
-        joinDate: new Date().toISOString().split('T')[0],
-        status: 'Activo',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        u_nombres: '',
+        u_apellidos: '',
+        u_td_id: 1,
+        u_numero_documento: '',
+        u_correo_electronico: '',
+        u_contrasena: '123456',
+        u_r_id: 1,
+        u_numero_contacto: '',
+        u_eg_id: 1
       });
     }
     setShowModal(true);
@@ -95,33 +69,42 @@ const UsuariosView = () => {
     setEditingUser(null);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim()) return;
+    if (!formData.u_nombres.trim() || !formData.u_correo_electronico.trim()) return;
 
     if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? { ...formData, id: editingUser.id } : u));
+      const id = editingUser.u_id || editingUser.id;
+      await updateUsuarioAdmin(id, formData);
+      setUsers(users.map(u => ((u.u_id || u.id) === id ? { ...u, ...formData } : u)));
     } else {
-      const newUser = {
-        ...formData,
-        id: Date.now(),
-        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-      };
-      setUsers([newUser, ...users]);
+      const created = await createUsuario(formData);
+      setUsers([created, ...users]);
     }
     handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
-      setUsers(users.filter(u => u.id !== id));
+      await deleteUsuario(id);
+      setUsers(users.filter(u => (u.u_id || u.id) !== id));
     }
   };
 
+  const getRoleLabel = (r_id) => {
+    if (r_id === 3 || r_id === 'Admin') return 'Admin';
+    if (r_id === 2 || r_id === 'Entrenador') return 'Entrenador';
+    return 'Cliente';
+  };
+
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'Todos' || u.role === roleFilter;
+    const fullName = `${u.u_nombres || u.name || ''} ${u.u_apellidos || ''}`.toLowerCase();
+    const email = (u.u_correo_electronico || u.email || '').toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || email.includes(searchTerm.toLowerCase());
+    
+    const roleLabel = getRoleLabel(u.u_r_id || u.role);
+    const matchesRole = roleFilter === 'Todos' || roleLabel === roleFilter;
+
     return matchesSearch && matchesRole;
   });
 
@@ -149,24 +132,24 @@ const UsuariosView = () => {
             <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Total Usuarios</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{users.length}</span>
           </div>
-          <span className="badge badge-success">+15 este mes</span>
+          <span className="badge badge-success">Registrados</span>
         </div>
 
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Clientes Activos</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Usuarios Activos</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              {users.filter(u => u.status === 'Activo').length}
+              {users.filter(u => u.u_eg_id === 1 || u.status === 'Activo').length}
             </span>
           </div>
-          <span className="badge badge-primary">Membresía OK</span>
+          <span className="badge badge-primary">Estado OK</span>
         </div>
 
         <div className="stat-card">
           <div>
             <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Administradores</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              {users.filter(u => u.role === 'Admin').length}
+              {users.filter(u => u.u_r_id === 3 || u.role === 'Admin').length}
             </span>
           </div>
           <span className="badge badge-neutral">Staff Admin</span>
@@ -180,22 +163,22 @@ const UsuariosView = () => {
           <input
             type="text"
             className="admin-search-input"
-            placeholder="Buscar usuario por nombre o email..."
+            placeholder="Buscar usuario por nombre o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="admin-filter-group">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>ROL:</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>ROL (u_r_id):</span>
           <select
             className="admin-select"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="Todos">Todos</option>
-            <option value="Cliente">Cliente</option>
-            <option value="Entrenador">Entrenador</option>
-            <option value="Admin">Admin</option>
+            <option value="Cliente">Cliente (r_id = 1)</option>
+            <option value="Entrenador">Entrenador (r_id = 2)</option>
+            <option value="Admin">Admin (r_id = 3)</option>
           </select>
         </div>
       </div>
@@ -207,61 +190,74 @@ const UsuariosView = () => {
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th>Rol</th>
-                <th>Plan Asignado</th>
-                <th>Fecha de Registro</th>
-                <th>Estado</th>
+                <th>Documento</th>
+                <th>Contacto</th>
+                <th>Rol (u_r_id)</th>
+                <th>Estado (u_eg_id)</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                    Cargando usuarios...
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
                     No se encontraron usuarios.
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
-                  <tr key={u.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#f5f5f4' }}>
-                          <img src={u.avatar} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
+                filteredUsers.map((u) => {
+                  const id = u.u_id || u.id;
+                  const nombre = u.u_nombres ? `${u.u_nombres} ${u.u_apellidos || ''}` : u.name;
+                  const correo = u.u_correo_electronico || u.email;
+                  const doc = u.u_numero_documento || 'N/A';
+                  const contacto = u.u_numero_contacto || 'N/A';
+                  const roleLabel = getRoleLabel(u.u_r_id || u.role);
+                  const isActivo = (u.u_eg_id === 1 || u.status === 'Activo');
+
+                  return (
+                    <tr key={id}>
+                      <td>
                         <div>
-                          <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{u.name}</p>
-                          <p style={{ fontSize: '0.6875rem', color: '#78716c' }}>{u.email}</p>
+                          <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{nombre}</p>
+                          <p style={{ fontSize: '0.6875rem', color: '#78716c' }}>{correo}</p>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`badge ${
-                        u.role === 'Admin' ? 'badge-error' :
-                        u.role === 'Entrenador' ? 'badge-warning' : 'badge-neutral'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge badge-primary">{u.plan}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{u.joinDate}</span>
-                    </td>
-                    <td>
-                      <span className={`badge ${u.status === 'Activo' ? 'badge-success' : 'badge-warning'}`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn-icon" onClick={() => handleOpenModal(u)} title="Editar"><Edit size={18} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(u.id)} title="Eliminar"><Trash2 size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                          Doc #{doc} (TD: {u.u_td_id || 1})
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{contacto}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          roleLabel === 'Admin' ? 'badge-error' :
+                          roleLabel === 'Entrenador' ? 'badge-warning' : 'badge-neutral'
+                        }`}>
+                          {roleLabel} (ID: {u.u_r_id || 1})
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${isActivo ? 'badge-success' : 'badge-warning'}`}>
+                          {isActivo ? 'Activo (1)' : 'Inactivo (0)'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => handleOpenModal(u)} title="Editar"><Edit size={18} /></button>
+                          <button className="btn-icon danger" onClick={() => handleDelete(id)} title="Eliminar"><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -278,92 +274,121 @@ const UsuariosView = () => {
             </div>
             <form onSubmit={handleSave}>
               <div className="admin-modal-body">
-                <div className="admin-form-group">
-                  <label>Nombre Completo</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej. Laura Gómez"
-                    required
-                  />
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Nombres (u_nombres)</label>
+                    <input
+                      type="text"
+                      maxLength={35}
+                      className="admin-input"
+                      value={formData.u_nombres}
+                      onChange={(e) => setFormData({ ...formData, u_nombres: e.target.value })}
+                      placeholder="Ej. Laura"
+                      required
+                    />
+                  </div>
+                  <div className="admin-form-group">
+                    <label>Apellidos (u_apellidos)</label>
+                    <input
+                      type="text"
+                      maxLength={35}
+                      className="admin-input"
+                      value={formData.u_apellidos}
+                      onChange={(e) => setFormData({ ...formData, u_apellidos: e.target.value })}
+                      placeholder="Ej. Gómez"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Tipo Documento (u_td_id)</label>
+                    <select
+                      className="admin-select"
+                      value={formData.u_td_id}
+                      onChange={(e) => setFormData({ ...formData, u_td_id: parseInt(e.target.value) || 1 })}
+                    >
+                      <option value={1}>1 - Cédula de Ciudadanía</option>
+                      <option value={2}>2 - Cédula de Extranjería</option>
+                      <option value={3}>3 - Pasaporte</option>
+                    </select>
+                  </div>
+                  <div className="admin-form-group">
+                    <label>Número Documento (u_numero_documento)</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      value={formData.u_numero_documento}
+                      onChange={(e) => setFormData({ ...formData, u_numero_documento: e.target.value })}
+                      placeholder="Ej. 1020304050"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="admin-form-group">
-                  <label>Correo Electrónico</label>
+                  <label>Correo Electrónico (u_correo_electronico)</label>
                   <input
                     type="email"
+                    maxLength={100}
                     className="admin-input"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    value={formData.u_correo_electronico}
+                    onChange={(e) => setFormData({ ...formData, u_correo_electronico: e.target.value })}
                     placeholder="usuario@ejemplo.com"
                     required
                   />
                 </div>
 
-                <div className="admin-grid-2">
+                {!editingUser && (
                   <div className="admin-form-group">
-                    <label>Rol del Sistema</label>
-                    <select
-                      className="admin-select"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    >
-                      <option value="Cliente">Cliente</option>
-                      <option value="Entrenador">Entrenador</option>
-                      <option value="Admin">Admin</option>
-                    </select>
+                    <label>Contraseña (u_contrasena)</label>
+                    <input
+                      type="password"
+                      className="admin-input"
+                      value={formData.u_contrasena}
+                      onChange={(e) => setFormData({ ...formData, u_contrasena: e.target.value })}
+                      placeholder="Contraseña inicial"
+                      required
+                    />
                   </div>
-                  <div className="admin-form-group">
-                    <label>Plan Asignado</label>
-                    <select
-                      className="admin-select"
-                      value={formData.plan}
-                      onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                    >
-                      <option value="Plan Básico">Plan Básico</option>
-                      <option value="Plan Pro">Plan Pro</option>
-                      <option value="Plan VIP Performance">Plan VIP</option>
-                      <option value="Pase Diario">Pase Diario</option>
-                      <option value="Acceso Total">Acceso Total (Staff)</option>
-                    </select>
-                  </div>
-                </div>
+                )}
 
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
-                    <label>Fecha Registro</label>
-                    <input
-                      type="date"
-                      className="admin-input"
-                      value={formData.joinDate}
-                      onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
-                    />
-                  </div>
-                  <div className="admin-form-group">
-                    <label>Estado</label>
+                    <label>Rol del Sistema (u_r_id)</label>
                     <select
                       className="admin-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      value={formData.u_r_id}
+                      onChange={(e) => setFormData({ ...formData, u_r_id: parseInt(e.target.value) || 1 })}
                     >
-                      <option value="Activo">Activo</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Inactivo">Inactivo</option>
+                      <option value={1}>1 - Cliente</option>
+                      <option value={2}>2 - Entrenador</option>
+                      <option value={3}>3 - Administrador</option>
                     </select>
+                  </div>
+                  <div className="admin-form-group">
+                    <label>Número Contacto (u_numero_contacto)</label>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      value={formData.u_numero_contacto}
+                      onChange={(e) => setFormData({ ...formData, u_numero_contacto: e.target.value })}
+                      placeholder="Ej. 3001234567"
+                    />
                   </div>
                 </div>
 
                 <div className="admin-form-group">
-                  <label>URL Avatar / Foto</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    value={formData.avatar}
-                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                    placeholder="https://..."
-                  />
+                  <label>Estado General (u_eg_id)</label>
+                  <select
+                    className="admin-select"
+                    value={formData.u_eg_id}
+                    onChange={(e) => setFormData({ ...formData, u_eg_id: parseInt(e.target.value) || 1 })}
+                  >
+                    <option value={1}>1 - Activo</option>
+                    <option value={0}>0 - Inactivo</option>
+                  </select>
                 </div>
               </div>
               <div className="admin-modal-footer">

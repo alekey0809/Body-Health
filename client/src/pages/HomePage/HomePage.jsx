@@ -118,7 +118,6 @@ const HomePage = () => {
               {planes.slice(0, 3).map((plan, index) => {
                 const isFeatured = index === 1;
                 const label = index === 0 ? 'Individual' : isFeatured ? 'Compromiso' : 'Legado';
-                const durationText = plan.pe_duracion_dias ? `/ ${plan.pe_duracion_dias} días` : '/ mes';
                 return (
                   <div key={plan.pe_id} className={isFeatured ? "plan-card-featured" : "plan-card-standard"}>
                     {isFeatured && <div className="featured-badge">Más Elegido</div>}
@@ -126,7 +125,7 @@ const HomePage = () => {
                     <h3 className="plan-name">{plan.pe_nombre}</h3>
                     <div className="plan-price-box">
                       <span className="plan-price">${parseFloat(plan.pe_precio_base || 0).toLocaleString('es-CO')}</span>
-                      <span className="plan-period">{durationText}</span>
+                      <span className="plan-period">/ mes</span>
                     </div>
                     <ul className="plan-features-list">
                       <li><CheckCircle className="check-icon" size={18} /> Acceso total 24/7</li>

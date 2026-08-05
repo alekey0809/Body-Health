@@ -36,7 +36,6 @@ const PlansCatalogPage = () => {
           {planes.map((plan, index) => {
             const isFeatured = index === 1;
             const label = index === 0 ? 'Individual' : isFeatured ? 'Compromiso' : 'Legado';
-            const durationText = plan.pe_duracion_dias ? `/ ${plan.pe_duracion_dias} días` : '/ mes';
             return (
               <div key={plan.pe_id} className={isFeatured ? "catalog-card-featured" : "catalog-card-standard"}>
                 {isFeatured && <div className="catalog-badge">Recomendado</div>}
@@ -44,7 +43,7 @@ const PlansCatalogPage = () => {
                 <h3 className="catalog-name">{plan.pe_nombre}</h3>
                 <div className="catalog-price-box">
                   <span className="catalog-price">${parseFloat(plan.pe_precio_base || 0).toLocaleString('es-CO')}</span>
-                  <span className="catalog-period">{durationText}</span>
+                  <span className="catalog-period">/ mes</span>
                 </div>
                 <ul className="catalog-features-list">
                   <li><CheckCircle className="check-icon" size={18} /> Acceso total 24/7</li>

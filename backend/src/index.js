@@ -3,6 +3,8 @@ import cors from "cors";
 import { PORT } from './config/config.js';
 import userRoutes from './routes/user.routes.js';
 import planRoutes from './routes/plan.routes.js';
+import entrenadorRoutes from './routes/entrenador.routes.js';
+import pagoRoutes from './routes/pago.routes.js';
 
 const app = express();
 
@@ -18,8 +20,13 @@ app.get('/', (req, res) => {
 app.use('/api/users', userRoutes);
 // Rutas de Planes de Entrenamiento (PostgreSQL)
 app.use('/api/planes', planRoutes);
+// Rutas de Entrenadores (PostgreSQL)
+app.use('/api/entrenadores', entrenadorRoutes);
+// Rutas de Pagos
+app.use('/api/pagos', pagoRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
 

@@ -2,9 +2,10 @@ import api from './api';
 
 // Fallback visual en el cliente por si la conexión a la base de datos no trae información
 const defaultPlanes = [
-  { pe_id: 1, pe_nombre: 'Mensual', pe_duracion_dias: 30, pe_precio_base: 45.00, pe_eg_id: 1 },
-  { pe_id: 2, pe_nombre: 'Trimestral', pe_duracion_dias: 90, pe_precio_base: 120.00, pe_eg_id: 1 },
-  { pe_id: 3, pe_nombre: 'Semestral', pe_duracion_dias: 180, pe_precio_base: 210.00, pe_eg_id: 1 }
+  { pe_id: 1, pe_nombre: 'Plan Básico', pe_precio_base: 29.99, pe_eg_id: 1 },
+  { pe_id: 2, pe_nombre: 'Plan Pro', pe_precio_base: 49.99, pe_eg_id: 1 },
+  { pe_id: 3, pe_nombre: 'Plan VIP Performance', pe_precio_base: 89.99, pe_eg_id: 1 },
+  { pe_id: 4, pe_nombre: 'Pase Diario', pe_precio_base: 9.99, pe_eg_id: 1 }
 ];
 
 export const getPlanes = async () => {
@@ -34,16 +35,31 @@ export const getPlanById = async (id) => {
 };
 
 export const createPlan = async (planData) => {
-  const response = await api.post('/api/planes', planData);
-  return response.data;
+  try {
+    const response = await api.post('/api/planes', planData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear plan:', error);
+    return { pe_id: Date.now(), ...planData };
+  }
 };
 
 export const updatePlan = async (id, planData) => {
-  const response = await api.put(`/api/planes/${id}`, planData);
-  return response.data;
+  try {
+    const response = await api.put(`/api/planes/${id}`, planData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar plan:', error);
+    return { pe_id: id, ...planData };
+  }
 };
 
 export const deletePlan = async (id) => {
-  const response = await api.delete(`/api/planes/${id}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/api/planes/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar plan:', error);
+    return { pe_id: id };
+  }
 };

@@ -1,92 +1,61 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, CreditCard, DollarSign, CheckCircle2, Clock, AlertCircle, X } from 'lucide-react';
-
-const initialPagos = [
-  {
-    id: 'TRX-9821',
-    clientName: 'Laura Gómez',
-    clientEmail: 'laura.gomez@gmail.com',
-    planName: 'Plan Pro',
-    amount: 49.99,
-    date: '2026-07-22',
-    paymentMethod: 'Tarjeta de Crédito',
-    status: 'Completado'
-  },
-  {
-    id: 'TRX-9820',
-    clientName: 'Roberto Silva',
-    clientEmail: 'roberto.s@hotmail.com',
-    planName: 'Plan VIP Performance',
-    amount: 89.99,
-    date: '2026-07-21',
-    paymentMethod: 'MercadoPago',
-    status: 'Completado'
-  },
-  {
-    id: 'TRX-9819',
-    clientName: 'Ana Belén',
-    clientEmail: 'anabelen@yahoo.com',
-    planName: 'Plan Básico',
-    amount: 29.99,
-    date: '2026-07-21',
-    paymentMethod: 'Transferencia Bancaria',
-    status: 'Pendiente'
-  },
-  {
-    id: 'TRX-9818',
-    clientName: 'Diego Martínez',
-    clientEmail: 'diego.m@gmail.com',
-    planName: 'Pase Diario',
-    amount: 9.99,
-    date: '2026-07-20',
-    paymentMethod: 'Efectivo',
-    status: 'Completado'
-  },
-  {
-    id: 'TRX-9817',
-    clientName: 'María Fernández',
-    clientEmail: 'maria.f@gmail.com',
-    planName: 'Plan Pro',
-    amount: 49.99,
-    date: '2026-07-19',
-    paymentMethod: 'Tarjeta de Débito',
-    status: 'Fallido'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit, Trash2, X } from 'lucide-react';
+import { getPagos, createPago, updatePago, deletePago } from '../../../services/pagoService';
 
 const PagosView = () => {
-  const [pagos, setPagos] = useState(initialPagos);
+  const [pagos, setPagos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [showModal, setShowModal] = useState(false);
   const [editingPago, setEditingPago] = useState(null);
 
   const [formData, setFormData] = useState({
-    id: '',
+    pa_id: '',
     clientName: '',
     clientEmail: '',
     planName: 'Plan Pro',
-    amount: 49.99,
-    date: new Date().toISOString().split('T')[0],
-    paymentMethod: 'Tarjeta de Crédito',
-    status: 'Completado'
+    pa_monto: 49.99,
+    pa_fecha_pago: new Date().toISOString().split('T')[0],
+    pa_metodo_pago: 'Tarjeta de Crédito',
+    pa_estado: 'Completado'
   });
+
+  const fetchPagosData = async () => {
+    setLoading(true);
+    const data = await getPagos();
+    setPagos(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPagosData();
+  }, []);
 
   const handleOpenModal = (pago = null) => {
     if (pago) {
       setEditingPago(pago);
-      setFormData({ ...pago });
+      setFormData({
+        pa_id: pago.pa_id || pago.id || '',
+        clientName: pago.clientName || '',
+        clientEmail: pago.clientEmail || '',
+        planName: pago.planName || 'Plan Pro',
+        pa_monto: pago.pa_monto || pago.amount || 49.99,
+        pa_fecha_pago: pago.pa_fecha_pago || pago.date || new Date().toISOString().split('T')[0],
+        pa_metodo_pago: pago.pa_metodo_pago || pago.paymentMethod || 'Tarjeta de Crédito',
+        pa_estado: pago.pa_estado || pago.status || 'Completado'
+      });
     } else {
       setEditingPago(null);
       setFormData({
-        id: `TRX-${Math.floor(1000 + Math.random() * 9000)}`,
+        pa_id: `TRX-${Math.floor(1000 + Math.random() * 9000)}`,
         clientName: '',
         clientEmail: '',
         planName: 'Plan Pro',
-        amount: 49.99,
-        date: new Date().toISOString().split('T')[0],
-        paymentMethod: 'Tarjeta de Crédito',
-        status: 'Completado'
+        pa_monto: 49.99,
+        pa_fecha_pago: new Date().toISOString().split('T')[0],
+        pa_metodo_pago: 'Tarjeta de Crédito',
+        pa_estado: 'Completado'
       });
     }
     setShowModal(true);
@@ -97,39 +66,48 @@ const PagosView = () => {
     setEditingPago(null);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.clientName.trim()) return;
+    if (!formData.clientName.trim() && !formData.pa_id) return;
 
     if (editingPago) {
-      setPagos(pagos.map(p => p.id === editingPago.id ? { ...formData } : p));
+      const id = editingPago.pa_id || editingPago.id;
+      await updatePago(id, formData);
+      setPagos(pagos.map(p => (((p.pa_id || p.id) === id) ? { ...p, ...formData } : p)));
     } else {
-      setPagos([formData, ...pagos]);
+      const created = await createPago(formData);
+      setPagos([created, ...pagos]);
     }
     handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de cancelar o eliminar este registro de pago?')) {
-      setPagos(pagos.filter(p => p.id !== id));
+      await deletePago(id);
+      setPagos(pagos.filter(p => (p.pa_id || p.id) !== id));
     }
   };
 
   const filteredPagos = pagos.filter(p => {
-    const matchesSearch = p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'Todos' || p.status === statusFilter;
+    const idStr = String(p.pa_id || p.id || '').toLowerCase();
+    const nameStr = String(p.clientName || '').toLowerCase();
+    const emailStr = String(p.clientEmail || '').toLowerCase();
+    const matchesSearch = idStr.includes(searchTerm.toLowerCase()) ||
+                          nameStr.includes(searchTerm.toLowerCase()) ||
+                          emailStr.includes(searchTerm.toLowerCase());
+    
+    const estado = p.pa_estado || p.status;
+    const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const totalCompleted = pagos
-    .filter(p => p.status === 'Completado')
-    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+    .filter(p => (p.pa_estado || p.status) === 'Completado')
+    .reduce((acc, curr) => acc + Number(curr.pa_monto || curr.amount || 0), 0);
 
   const totalPending = pagos
-    .filter(p => p.status === 'Pendiente')
-    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+    .filter(p => (p.pa_estado || p.status) === 'Pendiente')
+    .reduce((acc, curr) => acc + Number(curr.pa_monto || curr.amount || 0), 0);
 
   return (
     <div>
@@ -208,63 +186,80 @@ const PagosView = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID Transacción</th>
+                <th>ID Transacción (pa_id)</th>
                 <th>Cliente</th>
                 <th>Concepto / Plan</th>
-                <th>Monto</th>
+                <th>Monto (pa_monto)</th>
                 <th>Fecha</th>
-                <th>Método</th>
-                <th>Estado</th>
+                <th>Método (pa_metodo_pago)</th>
+                <th>Estado (pa_estado)</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPagos.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                    Cargando transacciones...
+                  </td>
+                </tr>
+              ) : filteredPagos.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
                     No se encontraron registros de pagos.
                   </td>
                 </tr>
               ) : (
-                filteredPagos.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '0.75rem', color: '#1c1917' }}>{p.id}</span>
-                    </td>
-                    <td>
-                      <div>
-                        <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{p.clientName}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#78716c' }}>{p.clientEmail}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge badge-primary">{p.planName}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: '700', fontSize: '0.9375rem', color: 'var(--primary)' }}>${Number(p.amount).toFixed(2)}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{p.date}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{p.paymentMethod}</span>
-                    </td>
-                    <td>
-                      <span className={`badge ${
-                        p.status === 'Completado' ? 'badge-success' :
-                        p.status === 'Pendiente' ? 'badge-warning' : 'badge-error'
-                      }`}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(p.id)} title="Eliminar"><Trash2 size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredPagos.map((p) => {
+                  const id = p.pa_id || p.id;
+                  const monto = p.pa_monto || p.amount;
+                  const fecha = p.pa_fecha_pago || p.date;
+                  const metodo = p.pa_metodo_pago || p.paymentMethod;
+                  const estado = p.pa_estado || p.status;
+                  const clienteNombre = p.clientName || 'Cliente General';
+                  const clienteEmail = p.clientEmail || 'cliente@bodyhealth.com';
+                  const planNombre = p.planName || 'Suscripción';
+
+                  return (
+                    <tr key={id}>
+                      <td>
+                        <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '0.75rem', color: '#1c1917' }}>{id}</span>
+                      </td>
+                      <td>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{clienteNombre}</p>
+                          <p style={{ fontSize: '0.6875rem', color: '#78716c' }}>{clienteEmail}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge badge-primary">{planNombre}</span>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: '700', fontSize: '0.9375rem', color: 'var(--primary)' }}>${Number(monto).toFixed(2)}</span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{fecha ? String(fecha).split('T')[0] : '2026-07-22'}</span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{metodo}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          estado === 'Completado' ? 'badge-success' :
+                          estado === 'Pendiente' ? 'badge-warning' : 'badge-error'
+                        }`}>
+                          {estado}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
+                          <button className="btn-icon danger" onClick={() => handleDelete(id)} title="Eliminar"><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -283,22 +278,22 @@ const PagosView = () => {
               <div className="admin-modal-body">
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
-                    <label>ID Transacción</label>
+                    <label>ID Transacción (pa_id)</label>
                     <input
                       type="text"
                       className="admin-input"
-                      value={formData.id}
-                      onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                      value={formData.pa_id}
+                      onChange={(e) => setFormData({ ...formData, pa_id: e.target.value })}
                       required
                     />
                   </div>
                   <div className="admin-form-group">
-                    <label>Fecha</label>
+                    <label>Fecha Pago (pa_fecha_pago)</label>
                     <input
                       type="date"
                       className="admin-input"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      value={formData.pa_fecha_pago}
+                      onChange={(e) => setFormData({ ...formData, pa_fecha_pago: e.target.value })}
                       required
                     />
                   </div>
@@ -343,13 +338,13 @@ const PagosView = () => {
                     </select>
                   </div>
                   <div className="admin-form-group">
-                    <label>Monto ($ USD)</label>
+                    <label>Monto ($ USD) (pa_monto)</label>
                     <input
                       type="number"
                       step="0.01"
                       className="admin-input"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                      value={formData.pa_monto}
+                      onChange={(e) => setFormData({ ...formData, pa_monto: parseFloat(e.target.value) || 0 })}
                       required
                     />
                   </div>
@@ -357,11 +352,11 @@ const PagosView = () => {
 
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
-                    <label>Método de Pago</label>
+                    <label>Método de Pago (pa_metodo_pago)</label>
                     <select
                       className="admin-select"
-                      value={formData.paymentMethod}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                      value={formData.pa_metodo_pago}
+                      onChange={(e) => setFormData({ ...formData, pa_metodo_pago: e.target.value })}
                     >
                       <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
                       <option value="Tarjeta de Débito">Tarjeta de Débito</option>
@@ -371,11 +366,11 @@ const PagosView = () => {
                     </select>
                   </div>
                   <div className="admin-form-group">
-                    <label>Estado del Pago</label>
+                    <label>Estado del Pago (pa_estado)</label>
                     <select
                       className="admin-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      value={formData.pa_estado}
+                      onChange={(e) => setFormData({ ...formData, pa_estado: e.target.value })}
                     >
                       <option value="Completado">Completado</option>
                       <option value="Pendiente">Pendiente</option>

@@ -1,80 +1,46 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Dumbbell, Check, X } from 'lucide-react';
-
-const initialPlanes = [
-  {
-    id: 1,
-    name: 'Plan Básico',
-    price: 29.99,
-    period: 'mensual',
-    description: 'Acceso ilimitado a la zona de musculación y maquinaria cardio.',
-    subscribers: 210,
-    status: 'Activo',
-    features: 'Musculación, Vestuarios, Casilleros'
-  },
-  {
-    id: 2,
-    name: 'Plan Pro',
-    price: 49.99,
-    period: 'mensual',
-    description: 'Acceso total a musculación + todas las clases dirigidas (Yoga, HIIT, Pilates).',
-    subscribers: 480,
-    status: 'Activo',
-    features: 'Todo Básico + Clases Dirigidas + Evaluación Física'
-  },
-  {
-    id: 3,
-    name: 'Plan VIP Performance',
-    price: 89.99,
-    period: 'mensual',
-    description: 'Experiencia premium con entrenador personal (2 sesiones/mes), nutrición y sauna.',
-    subscribers: 140,
-    status: 'Activo',
-    features: 'Todo Pro + 2 Personal Trainer/mes + Nutrición + Sauna'
-  },
-  {
-    id: 4,
-    name: 'Pase Diario',
-    price: 9.99,
-    period: 'diario',
-    description: 'Acceso por un día completo a todas las instalaciones.',
-    subscribers: 20,
-    status: 'Activo',
-    features: 'Musculación + Clases del día'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit, Trash2, Dumbbell, X } from 'lucide-react';
+import { getPlanes, createPlan, updatePlan, deletePlan } from '../../../services/planService';
 
 const PlanesView = () => {
-  const [planes, setPlanes] = useState(initialPlanes);
+  const [planes, setPlanes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    price: 39.99,
-    period: 'mensual',
-    description: '',
-    subscribers: 0,
-    status: 'Activo',
-    features: ''
+    pe_nombre: '',
+    pe_precio_base: 39.99,
+    pe_eg_id: 1
   });
+
+  const fetchPlanesData = async () => {
+    setLoading(true);
+    const data = await getPlanes();
+    setPlanes(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPlanesData();
+  }, []);
 
   const handleOpenModal = (plan = null) => {
     if (plan) {
       setEditingPlan(plan);
-      setFormData({ ...plan });
+      setFormData({
+        pe_nombre: plan.pe_nombre || plan.name || '',
+        pe_precio_base: plan.pe_precio_base || plan.price || 39.99,
+        pe_eg_id: plan.pe_eg_id || 1
+      });
     } else {
       setEditingPlan(null);
       setFormData({
-        name: '',
-        price: 39.99,
-        period: 'mensual',
-        description: '',
-        subscribers: 0,
-        status: 'Activo',
-        features: 'Musculación, Clases Dirigidas'
+        pe_nombre: '',
+        pe_precio_base: 39.99,
+        pe_eg_id: 1
       });
     }
     setShowModal(true);
@@ -85,36 +51,34 @@ const PlanesView = () => {
     setEditingPlan(null);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.pe_nombre.trim()) return;
 
     if (editingPlan) {
-      setPlanes(planes.map(p => p.id === editingPlan.id ? { ...formData, id: editingPlan.id } : p));
+      const updated = await updatePlan(editingPlan.pe_id || editingPlan.id, formData);
+      setPlanes(planes.map(p => ((p.pe_id || p.id) === (editingPlan.pe_id || editingPlan.id) ? { ...p, ...formData } : p)));
     } else {
-      const newPlan = {
-        ...formData,
-        id: Date.now()
-      };
-      setPlanes([newPlan, ...planes]);
+      const created = await createPlan(formData);
+      setPlanes([created, ...planes]);
     }
     handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este plan?')) {
-      setPlanes(planes.filter(p => p.id !== id));
+      await deletePlan(id);
+      setPlanes(planes.filter(p => (p.pe_id || p.id) !== id));
     }
   };
 
   const filteredPlanes = planes.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'Todos' || p.status === statusFilter;
+    const name = (p.pe_nombre || p.name || '').toLowerCase();
+    const matchesSearch = name.includes(searchTerm.toLowerCase());
+    const isActivo = (p.pe_eg_id === 1 || p.status === 'Activo');
+    const matchesStatus = statusFilter === 'Todos' || (statusFilter === 'Activo' ? isActivo : !isActivo);
     return matchesSearch && matchesStatus;
   });
-
-  const totalSubscribers = planes.reduce((acc, curr) => acc + Number(curr.subscribers || 0), 0);
 
   return (
     <div>
@@ -124,7 +88,7 @@ const PlanesView = () => {
           <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--error)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Administración</span>
           <h2 style={{ fontSize: '2.25rem', fontWeight: '700', marginTop: '0.5rem', marginBottom: '0.5rem' }}>Gestión de Planes y Membresías</h2>
           <p style={{ color: 'var(--on-surface-variant)', fontSize: '0.875rem', maxWidth: '42rem' }}>
-            Configura el catálogo de suscripciones, precios, beneficios y disponibilidad para los clientes de BodyHealth.
+            Configura el catálogo de suscripciones, precios y disponibilidad para los clientes de BodyHealth.
           </p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -137,7 +101,7 @@ const PlanesView = () => {
       <section className="stats-grid">
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Planes Activos</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Planes Registrados</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{planes.length}</span>
           </div>
           <span className="badge badge-success">Catálogo Vigente</span>
@@ -145,18 +109,22 @@ const PlanesView = () => {
 
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Suscriptores Totales</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalSubscribers}</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Planes Activos</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
+              {planes.filter(p => p.pe_eg_id === 1 || p.status === 'Activo').length}
+            </span>
           </div>
-          <span className="badge badge-primary">Activos</span>
+          <span className="badge badge-primary">Disponibles</span>
         </div>
 
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Plan Más Vendido</span>
-            <span style={{ fontSize: '1.25rem', fontWeight: '700' }}>Plan Pro ($49.99)</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Precio Base Promedio</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+              ${planes.length > 0 ? (planes.reduce((acc, curr) => acc + Number(curr.pe_precio_base || curr.price || 0), 0) / planes.length).toFixed(2) : '0.00'}
+            </span>
           </div>
-          <span className="badge badge-warning">56% del Total</span>
+          <span className="badge badge-warning">Promedio</span>
         </div>
       </section>
 
@@ -173,15 +141,15 @@ const PlanesView = () => {
           />
         </div>
         <div className="admin-filter-group">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>ESTADO:</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>ESTADO GENERAL (pe_eg_id):</span>
           <select
             className="admin-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="Todos">Todos</option>
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
+            <option value="Activo">Activo (eg_id = 1)</option>
+            <option value="Inactivo">Inactivo (eg_id != 1)</option>
           </select>
         </div>
       </div>
@@ -192,60 +160,65 @@ const PlanesView = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Plan</th>
-                <th>Precio / Período</th>
-                <th>Beneficios / Características</th>
-                <th>Suscriptores</th>
-                <th>Estado</th>
+                <th>ID</th>
+                <th>Nombre del Plan (pe_nombre)</th>
+                <th>Precio Base (pe_precio_base)</th>
+                <th>Estado General (pe_eg_id)</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPlanes.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                    Cargando planes...
+                  </td>
+                </tr>
+              ) : filteredPlanes.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
                     No se encontraron planes.
                   </td>
                 </tr>
               ) : (
-                filteredPlanes.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ padding: '0.5rem', borderRadius: '0.375rem', backgroundColor: 'rgba(224, 23, 23, 0.1)', color: 'var(--primary)' }}>
-                          <Dumbbell size={20} />
+                filteredPlanes.map((p) => {
+                  const id = p.pe_id || p.id;
+                  const nombre = p.pe_nombre || p.name;
+                  const precio = p.pe_precio_base || p.price;
+                  const isActivo = (p.pe_eg_id === 1 || p.status === 'Activo');
+
+                  return (
+                    <tr key={id}>
+                      <td>
+                        <span style={{ fontWeight: '700', fontFamily: 'monospace' }}>#{id}</span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{ padding: '0.5rem', borderRadius: '0.375rem', backgroundColor: 'rgba(224, 23, 23, 0.1)', color: 'var(--primary)' }}>
+                            <Dumbbell size={20} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{nombre}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{p.name}</p>
-                          <p style={{ fontSize: '0.6875rem', color: '#78716c', maxWidth: '16rem' }}>{p.description}</p>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)' }}>${Number(precio).toFixed(2)}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${isActivo ? 'badge-success' : 'badge-neutral'}`}>
+                          {isActivo ? 'Activo (1)' : 'Inactivo (0)'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
+                          <button className="btn-icon danger" onClick={() => handleDelete(id)} title="Eliminar"><Trash2 size={18} /></button>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--primary)' }}>${p.price}</span>
-                        <span style={{ fontSize: '0.6875rem', color: '#78716c' }}> / {p.period}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{p.features}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: '700', fontSize: '0.875rem' }}>{p.subscribers}</span>
-                    </td>
-                    <td>
-                      <span className={`badge ${p.status === 'Activo' ? 'badge-success' : 'badge-neutral'}`}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(p.id)} title="Eliminar"><Trash2 size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -263,84 +236,39 @@ const PlanesView = () => {
             <form onSubmit={handleSave}>
               <div className="admin-modal-body">
                 <div className="admin-form-group">
-                  <label>Nombre del Plan</label>
+                  <label>Nombre del Plan (pe_nombre)</label>
                   <input
                     type="text"
+                    maxLength={30}
                     className="admin-input"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej. Plan Pro Annual"
+                    value={formData.pe_nombre}
+                    onChange={(e) => setFormData({ ...formData, pe_nombre: e.target.value })}
+                    placeholder="Ej. Plan Trimestral"
                     required
                   />
                 </div>
 
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
-                    <label>Precio ($ USD)</label>
+                    <label>Precio Base ($ USD) (pe_precio_base)</label>
                     <input
                       type="number"
                       step="0.01"
                       className="admin-input"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      value={formData.pe_precio_base}
+                      onChange={(e) => setFormData({ ...formData, pe_precio_base: parseFloat(e.target.value) || 0 })}
                       required
                     />
                   </div>
                   <div className="admin-form-group">
-                    <label>Período de Cobro</label>
+                    <label>Estado General (pe_eg_id)</label>
                     <select
                       className="admin-select"
-                      value={formData.period}
-                      onChange={(e) => setFormData({ ...formData, period: e.target.value })}
+                      value={formData.pe_eg_id}
+                      onChange={(e) => setFormData({ ...formData, pe_eg_id: parseInt(e.target.value) || 1 })}
                     >
-                      <option value="mensual">Mensual</option>
-                      <option value="anual">Anual</option>
-                      <option value="diario">Diario</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Descripción Corta</label>
-                  <textarea
-                    className="admin-textarea"
-                    rows="2"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Detalla de qué trata este plan..."
-                  />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Beneficios Incluidos (separados por coma)</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    value={formData.features}
-                    onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                    placeholder="Musculación, Clases Dirigidas, Personal Trainer"
-                  />
-                </div>
-
-                <div className="admin-grid-2">
-                  <div className="admin-form-group">
-                    <label>Suscriptores Actuales</label>
-                    <input
-                      type="number"
-                      className="admin-input"
-                      value={formData.subscribers}
-                      onChange={(e) => setFormData({ ...formData, subscribers: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div className="admin-form-group">
-                    <label>Estado</label>
-                    <select
-                      className="admin-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    >
-                      <option value="Activo">Activo</option>
-                      <option value="Inactivo">Inactivo</option>
+                      <option value={1}>1 - Activo</option>
+                      <option value={0}>0 - Inactivo</option>
                     </select>
                   </div>
                 </div>

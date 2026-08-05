@@ -1,12 +1,28 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ArrowLeft, Dumbbell, CreditCard, Landmark, Lock, ShieldCheck } from 'lucide-react';
+import { getPlanById } from '../../services/planService';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
   const { user, register } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const planId = searchParams.get('planId');
+
+  const [plan, setPlan] = useState(null);
+  const [loadingPlan, setLoadingPlan] = useState(true);
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      setLoadingPlan(true);
+      const data = await getPlanById(planId);
+      setPlan(data);
+      setLoadingPlan(false);
+    };
+    fetchPlan();
+  }, [planId]);
   
   // Si está logueado, pre-llenar. Si no, vacío.
   const [formData, setFormData] = useState({
@@ -21,6 +37,9 @@ const CheckoutPage = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('card'); // card | pse
   const [loading, setLoading] = useState(false);
+
+  const planNombre = plan?.pe_nombre || 'Plan';
+  const planPrecio = parseFloat(plan?.pe_precio_base || 0).toLocaleString('es-CO');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -142,12 +161,11 @@ const CheckoutPage = () => {
                       <Dumbbell size={20} />
                     </div>
                     <div>
-                      <p className="plan-name">Plan Trimestral</p>
-                      <p className="plan-duration">Vence en 90 días</p>
+                      <p className="plan-name">{planNombre}</p>
                     </div>
                   </div>
                   <div className="summary-right">
-                    <p className="plan-price">$37.500</p>
+                    <p className="plan-price">${planPrecio}</p>
                     <p className="tax-text">IVA Incluido</p>
                   </div>
                 </div>
@@ -160,7 +178,7 @@ const CheckoutPage = () => {
           <footer className="checkout-footer">
             <div className="footer-container">
               <button type="submit" disabled={loading} className="btn-primary pay-button">
-                {loading ? 'Procesando Pago...' : 'Confirmar y Pagar $37.500'}
+                {loading ? 'Procesando Pago...' : `Confirmar y Pagar $${planPrecio}`}
                 {!loading && <Lock size={20} />}
               </button>
               <p className="footer-disclaimer">Procesado por Bodyhealt Payment Gateway</p>

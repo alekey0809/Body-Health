@@ -1,74 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserPlus, Search, Edit, Trash2, Star, X } from 'lucide-react';
-
-const initialTrainers = [
-  {
-    id: 1,
-    name: 'Elena Valery',
-    role: 'Senior Master',
-    specialty: 'Yoga',
-    classesPerWeek: 12,
-    status: 'Disponible',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWT77s3Ob6BZ_xenDfI9nbBvd2AGw67CGVJCU-W2CPtT8tD9gJgGsB66E1HwSsLr5m-t7IBruM8st_NjQ0G2KYOUam-uugnG1SfT9n7xqmusBakEr0-ZrtMi-l5glHCly8ok8obLj8FwrMgOJmf4xe4Hyx1tKpyZ4ViEvVyKYfBPL-2jibpvKhKWRa0FF6QsNs_tiW4mdn7CqeVRaXGm2nPkS8asHJDOpPGM5gsJWUWEq_gW6BK2e5Tu1yWJoSGlyo14K7YNxXwRY'
-  },
-  {
-    id: 2,
-    name: 'Marcus Thorne',
-    role: 'Strength Lead',
-    specialty: 'HIIT',
-    classesPerWeek: 18,
-    status: 'Ocupado',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB-bs7RshKDhpW-NLUqGFbm5UFILHotSGK9h8AQ_viIGuVW4QB1CRhFFrr5Y76OTI0pM3nb1BeKUP-A2sCOnkLe8U80Bj8jUuTMNjKUwRTLzeoLoosvnNW5xeZGK0bSspPC0VrkM_QNMWMq2-TjoPm5leBqCGoVien8FfDw596NySixOCUW2yFLExo1BucmFKVJNt5uVOPEus-4pUAKsqNFuhQdDK-3sjnX1z3aQG1JfUhmU7oPUaYQCnbpb7wk0Jh3ngCbTkxlexg'
-  },
-  {
-    id: 3,
-    name: 'Carlos Mendoza',
-    role: 'Bodybuilding Specialist',
-    specialty: 'Musculación',
-    classesPerWeek: 15,
-    status: 'Disponible',
-    avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 4,
-    name: 'Sofia Ramírez',
-    role: 'Core & Mobility',
-    specialty: 'Pilates',
-    classesPerWeek: 10,
-    status: 'Disponible',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-  }
-];
+import { getEntrenadores, createEntrenador, updateEntrenador, deleteEntrenador } from '../../../services/entrenadorService';
 
 const EntrenadoresView = () => {
-  const [trainers, setTrainers] = useState(initialTrainers);
+  const [trainers, setTrainers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('Todas');
   const [showModal, setShowModal] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    role: '',
-    specialty: 'Yoga',
-    classesPerWeek: 10,
-    status: 'Disponible',
-    avatar: ''
+    en_u_id: '',
+    u_nombres: '',
+    u_apellidos: '',
+    en_especialidad: 'Yoga',
+    en_horario_assigned: 'Lunes a Viernes (08:00 AM - 04:00 PM)',
+    en_sueldo_base: 2500,
+    en_fecha_contratacion: new Date().toISOString().split('T')[0]
   });
+
+  const fetchEntrenadores = async () => {
+    setLoading(true);
+    const data = await getEntrenadores();
+    setTrainers(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEntrenadores();
+  }, []);
 
   const handleOpenModal = (trainer = null) => {
     if (trainer) {
       setEditingTrainer(trainer);
-      setFormData({ ...trainer });
+      setFormData({
+        en_u_id: trainer.en_u_id || '',
+        u_nombres: trainer.u_nombres || trainer.name?.split(' ')[0] || '',
+        u_apellidos: trainer.u_apellidos || trainer.name?.split(' ').slice(1).join(' ') || '',
+        en_especialidad: trainer.en_especialidad || trainer.specialty || 'Yoga',
+        en_horario_assigned: trainer.en_horario_assigned || 'Lunes a Viernes (08:00 AM - 04:00 PM)',
+        en_sueldo_base: trainer.en_sueldo_base || 2500,
+        en_fecha_contratacion: trainer.en_fecha_contratacion ? trainer.en_fecha_contratacion.split('T')[0] : new Date().toISOString().split('T')[0]
+      });
     } else {
       setEditingTrainer(null);
       setFormData({
-        name: '',
-        role: '',
-        specialty: 'Yoga',
-        classesPerWeek: 10,
-        status: 'Disponible',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        en_u_id: `e-${Date.now()}`,
+        u_nombres: '',
+        u_apellidos: '',
+        en_especialidad: 'Yoga',
+        en_horario_assigned: 'Lunes a Viernes (08:00 AM - 04:00 PM)',
+        en_sueldo_base: 2500,
+        en_fecha_contratacion: new Date().toISOString().split('T')[0]
       });
     }
     setShowModal(true);
@@ -79,33 +63,32 @@ const EntrenadoresView = () => {
     setEditingTrainer(null);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.u_nombres.trim()) return;
 
     if (editingTrainer) {
-      setTrainers(trainers.map(t => t.id === editingTrainer.id ? { ...formData, id: editingTrainer.id } : t));
+      await updateEntrenador(editingTrainer.en_u_id, formData);
+      setTrainers(trainers.map(t => (t.en_u_id === editingTrainer.en_u_id ? { ...t, ...formData } : t)));
     } else {
-      const newTrainer = {
-        ...formData,
-        id: Date.now(),
-        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-      };
-      setTrainers([newTrainer, ...trainers]);
+      const created = await createEntrenador(formData);
+      setTrainers([created, ...trainers]);
     }
     handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (en_u_id) => {
     if (window.confirm('¿Estás seguro de eliminar este entrenador?')) {
-      setTrainers(trainers.filter(t => t.id !== id));
+      await deleteEntrenador(en_u_id);
+      setTrainers(trainers.filter(t => t.en_u_id !== en_u_id));
     }
   };
 
   const filteredTrainers = trainers.filter(t => {
-    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          t.role.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSpecialty = selectedSpecialty === 'Todas' || t.specialty === selectedSpecialty;
+    const fullName = `${t.u_nombres || t.name || ''} ${t.u_apellidos || ''}`.toLowerCase();
+    const specialty = (t.en_especialidad || t.specialty || '').toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || specialty.includes(searchTerm.toLowerCase());
+    const matchesSpecialty = selectedSpecialty === 'Todas' || (t.en_especialidad || t.specialty) === selectedSpecialty;
     return matchesSearch && matchesSpecialty;
   });
 
@@ -133,17 +116,17 @@ const EntrenadoresView = () => {
             <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Total Entrenadores</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{trainers.length}</span>
           </div>
-          <span className="badge badge-primary">+2 hoy</span>
+          <span className="badge badge-primary">Equipo Activo</span>
         </div>
         
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Clases Semanales</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Sueldo Promedio</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              {trainers.reduce((acc, curr) => acc + Number(curr.classesPerWeek || 0), 0)}
+              ${trainers.length > 0 ? (trainers.reduce((acc, curr) => acc + Number(curr.en_sueldo_base || 2500), 0) / trainers.length).toFixed(2) : '0.00'}
             </span>
           </div>
-          <span className="badge badge-error">Capacidad 88%</span>
+          <span className="badge badge-success">Nivel Base</span>
         </div>
 
         <div className="stat-card">
@@ -165,7 +148,7 @@ const EntrenadoresView = () => {
           <input
             type="text"
             className="admin-search-input"
-            placeholder="Buscar por nombre o rol..."
+            placeholder="Buscar por nombre o especialidad..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -192,47 +175,60 @@ const EntrenadoresView = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Entrenador</th>
+                <th>Entrenador (ID / Nombre)</th>
                 <th>Especialidad</th>
-                <th>Clases / Sem</th>
-                <th>Estado</th>
+                <th>Horario Asignado</th>
+                <th>Sueldo Base</th>
+                <th>Contratación</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTrainers.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                    Cargando entrenadores...
+                  </td>
+                </tr>
+              ) : filteredTrainers.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
                     No se encontraron entrenadores.
                   </td>
                 </tr>
               ) : (
                 filteredTrainers.map((t) => (
-                  <tr key={t.id}>
+                  <tr key={t.en_u_id || t.id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#f5f5f4' }}>
-                          <img src={t.avatar} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                        <div>
-                          <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>{t.name}</p>
-                          <p style={{ fontSize: '0.625rem', color: '#78716c', textTransform: 'uppercase' }}>{t.role}</p>
-                        </div>
+                      <div>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '700' }}>
+                          {t.u_nombres ? `${t.u_nombres} ${t.u_apellidos || ''}` : t.name}
+                        </p>
+                        <p style={{ fontSize: '0.625rem', color: '#78716c', fontFamily: 'monospace' }}>
+                          UUID: {t.en_u_id || t.id}
+                        </p>
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-primary">{t.specialty}</span>
+                      <span className="badge badge-primary">{t.en_especialidad || t.specialty || 'Yoga'}</span>
                     </td>
-                    <td><span style={{ fontFamily: 'Noto Serif', fontWeight: '700', color: 'var(--primary)' }}>{t.classesPerWeek}</span></td>
                     <td>
-                      <span className={`badge ${t.status === 'Disponible' ? 'badge-success' : 'badge-warning'}`}>
-                        {t.status}
+                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{t.en_horario_assigned || 'Tiempo Completo'}</span>
+                    </td>
+                    <td>
+                      <span style={{ fontFamily: 'Noto Serif', fontWeight: '700', color: 'var(--primary)' }}>
+                        ${Number(t.en_sueldo_base || 2500).toFixed(2)}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.75rem', color: '#78716c' }}>
+                        {t.en_fecha_contratacion ? String(t.en_fecha_contratacion).split('T')[0] : '2024-01-01'}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                         <button className="btn-icon" onClick={() => handleOpenModal(t)} title="Editar"><Edit size={18} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(t.id)} title="Eliminar"><Trash2 size={18} /></button>
+                        <button className="btn-icon danger" onClick={() => handleDelete(t.en_u_id || t.id)} title="Eliminar"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -259,34 +255,50 @@ const EntrenadoresView = () => {
             </div>
             <form onSubmit={handleSave}>
               <div className="admin-modal-body">
-                <div className="admin-form-group">
-                  <label>Nombre Completo</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="admin-grid-2">
+                {!editingTrainer && (
                   <div className="admin-form-group">
-                    <label>Cargo / Rol</label>
+                    <label>ID Usuario (UUID)</label>
                     <input
                       type="text"
                       className="admin-input"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      value={formData.en_u_id}
+                      onChange={(e) => setFormData({ ...formData, en_u_id: e.target.value })}
+                      placeholder="Ej. e01a89b2-1111-4234-8888-abcdef123401"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Nombres</label>
+                    <input
+                      type="text"
+                      className="admin-input"
+                      value={formData.u_nombres}
+                      onChange={(e) => setFormData({ ...formData, u_nombres: e.target.value })}
                       required
                     />
                   </div>
                   <div className="admin-form-group">
+                    <label>Apellidos</label>
+                    <input
+                      type="text"
+                      className="admin-input"
+                      value={formData.u_apellidos}
+                      onChange={(e) => setFormData({ ...formData, u_apellidos: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
                     <label>Especialidad</label>
                     <select
                       className="admin-select"
-                      value={formData.specialty}
-                      onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                      value={formData.en_especialidad}
+                      onChange={(e) => setFormData({ ...formData, en_especialidad: e.target.value })}
                     >
                       <option value="Yoga">Yoga</option>
                       <option value="HIIT">HIIT</option>
@@ -295,41 +307,39 @@ const EntrenadoresView = () => {
                       <option value="Crossfit">Crossfit</option>
                     </select>
                   </div>
-                </div>
-
-                <div className="admin-grid-2">
                   <div className="admin-form-group">
-                    <label>Clases por Semana</label>
+                    <label>Sueldo Base ($ USD)</label>
                     <input
                       type="number"
+                      step="0.01"
                       className="admin-input"
-                      value={formData.classesPerWeek}
-                      onChange={(e) => setFormData({ ...formData, classesPerWeek: parseInt(e.target.value) || 0 })}
-                      min="1"
+                      value={formData.en_sueldo_base}
+                      onChange={(e) => setFormData({ ...formData, en_sueldo_base: parseFloat(e.target.value) || 0 })}
+                      required
                     />
-                  </div>
-                  <div className="admin-form-group">
-                    <label>Estado</label>
-                    <select
-                      className="admin-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    >
-                      <option value="Disponible">Disponible</option>
-                      <option value="Ocupado">Ocupado</option>
-                      <option value="Licencia">Licencia</option>
-                    </select>
                   </div>
                 </div>
 
                 <div className="admin-form-group">
-                  <label>URL Foto de Perfil</label>
+                  <label>Horario Asignado</label>
                   <input
                     type="text"
                     className="admin-input"
-                    value={formData.avatar}
-                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                    placeholder="https://..."
+                    value={formData.en_horario_assigned}
+                    onChange={(e) => setFormData({ ...formData, en_horario_assigned: e.target.value })}
+                    placeholder="Ej. Lunes a Viernes (08:00 AM - 04:00 PM)"
+                    required
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Fecha de Contratación</label>
+                  <input
+                    type="date"
+                    className="admin-input"
+                    value={formData.en_fecha_contratacion}
+                    onChange={(e) => setFormData({ ...formData, en_fecha_contratacion: e.target.value })}
+                    required
                   />
                 </div>
               </div>
