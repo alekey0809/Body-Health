@@ -7,7 +7,7 @@
 
 :root {
   /* Editorial Premium Colors */
-  --primary: #e01717;
+  --primary: #c81010;
   --on-primary: #ffffff;
   --primary-container: #ffdad6;
   --on-primary-container: #410002;
@@ -28,15 +28,15 @@
   --on-error-container: #410002;
   
   --background: #fff8f7; /* Fondo principal gris/rojo ultra claro */
-  --on-background: #231918;
+  --on-background: #120c0b;
   
   --surface: #fff8f7;
-  --on-surface: #231918;
+  --on-surface: #120c0b;
   --surface-variant: #f5ddda;
-  --on-surface-variant: #534341;
+  --on-surface-variant: #281b19;
   
-  --outline: #857371;
-  --outline-variant: #d8c2bf;
+  --outline: #594745;
+  --outline-variant: #c4b0ad;
   
   --surface-container-lowest: #ffffff; /* Contenedores blancos */
   --surface-container-low: #fff0ee;
