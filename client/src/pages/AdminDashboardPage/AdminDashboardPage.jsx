@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X } from 'lucide-react';
+import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X, LayoutDashboard, ExternalLink } from 'lucide-react';
 import './AdminDashboardPage.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -49,7 +49,7 @@ const AdminDashboardPage = () => {
               style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}
             >
               <Home size={20} />
-              <span className="nav-item-text">Inicio</span>
+              <span className="nav-item-text">Inicio Admin</span>
             </button>
 
             <button
@@ -98,7 +98,23 @@ const AdminDashboardPage = () => {
             </button>
           </nav>
 
-          <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid rgba(216, 194, 191, 0.5)' }}>
+          <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(216, 194, 191, 0.5)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="nav-item" 
+              style={{ color: '#0284c7', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <LayoutDashboard size={20} />
+              <span className="nav-item-text">Ir a Dashboard Usuario</span>
+            </button>
+            <button 
+              onClick={() => navigate('/main')} 
+              className="nav-item" 
+              style={{ color: '#57534e', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <ExternalLink size={20} />
+              <span className="nav-item-text">Ver Landing Page</span>
+            </button>
             <button onClick={handleLogout} className="nav-item" style={{ color: 'var(--error)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
               <LogOut size={20} />
               <span className="nav-item-text">Cerrar Sesión</span>
@@ -122,7 +138,7 @@ const AdminDashboardPage = () => {
             <h1 className="admin-header-title">BODYHEALT ADMIN</h1>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', backgroundColor: 'var(--surface-container-low)', border: '1px solid var(--outline-variant)' }}>
               <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: 'var(--error)' }}></span>
               <span style={{ fontSize: '0.625rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--on-surface-variant)' }}>Panel Activo</span>
@@ -130,7 +146,7 @@ const AdminDashboardPage = () => {
           </div>
         </header>
 
-        {/* Mobile Hamburger Drawer - Occupies 50vh vertically, only links */}
+        {/* Mobile Hamburger Drawer */}
         {isMobileMenuOpen && (
           <div className="admin-mobile-drawer">
             <nav className="admin-mobile-nav">
@@ -139,7 +155,7 @@ const AdminDashboardPage = () => {
                 className={`admin-mobile-nav-link ${activeTab === 'inicio' ? 'active' : ''}`}
               >
                 <Home size={20} />
-                <span>Inicio</span>
+                <span>Inicio Admin</span>
               </button>
 
               <button
@@ -183,6 +199,23 @@ const AdminDashboardPage = () => {
               </button>
 
               <button
+                onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
+                className="admin-mobile-nav-link"
+                style={{ color: '#0284c7' }}
+              >
+                <LayoutDashboard size={20} />
+                <span>Ir al Dashboard Usuario</span>
+              </button>
+
+              <button
+                onClick={() => { navigate('/main'); setIsMobileMenuOpen(false); }}
+                className="admin-mobile-nav-link"
+              >
+                <ExternalLink size={20} />
+                <span>Ver Landing Page</span>
+              </button>
+
+              <button
                 onClick={handleLogout}
                 className="admin-mobile-nav-link danger"
               >
@@ -208,4 +241,3 @@ const AdminDashboardPage = () => {
 };
 
 export default AdminDashboardPage;
-

@@ -1,80 +1,65 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, FileText, Eye, Tag, X } from 'lucide-react';
-
-const initialPosts = [
-  {
-    id: 1,
-    title: '5 Ejercicios Clave para Hipertrofia Muscular',
-    category: 'Nutrición & Rutinas',
-    author: 'Carlos Mendoza',
-    publishDate: '2026-07-20',
-    views: 1240,
-    status: 'Publicado',
-    excerpt: 'Descubre los fundamentos biomecánicos para maximizar la ganancia muscular en tu rutina semanal.'
-  },
-  {
-    id: 2,
-    title: 'Importancia de la Hidratación en Climas Cálidos',
-    category: 'Salud',
-    author: 'Elena Valery',
-    publishDate: '2026-07-18',
-    views: 890,
-    status: 'Publicado',
-    excerpt: 'Consejos prácticos sobre reposición de electrolitos y regulación térmica durante la actividad física.'
-  },
-  {
-    id: 3,
-    title: 'Nuevos Horarios de Clases de CrossFit y Funcional',
-    category: 'Anuncios',
-    author: 'Admin BodyHealth',
-    publishDate: '2026-07-15',
-    views: 2100,
-    status: 'Publicado',
-    excerpt: 'Ampliamos los turnos de la tarde y abrimos nuevo cupo matutino a partir del próximo lunes.'
-  },
-  {
-    id: 4,
-    title: 'Guía para Principiantes en la Práctica de Yoga',
-    category: 'Bienestar',
-    author: 'Sofia Ramírez',
-    publishDate: '2026-07-10',
-    views: 0,
-    status: 'Borrador',
-    excerpt: 'Una introducción a la respiración consciente, flexibilidad y posturas fundamentales para iniciarse.'
-  }
-];
+import React, { useState, useEffect, useContext } from 'react';
+import { Plus, Search, Edit, Trash2, Eye, X, Image as ImageIcon } from 'lucide-react';
+import { getNoticias, createNoticia, updateNoticia, deleteNoticia } from '../../../services/noticiaService';
+import { AuthContext } from '../../../context/AuthContext';
 
 const PublicacionesView = () => {
-  const [posts, setPosts] = useState(initialPosts);
+  const { user } = useContext(AuthContext);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('Todas');
+  const [statusFilter, setStatusFilter] = useState('Todas');
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [formData, setFormData] = useState({
-    title: '',
-    category: 'Nutrición & Rutinas',
-    author: 'Admin BodyHealth',
-    publishDate: new Date().toISOString().split('T')[0],
-    views: 0,
-    status: 'Publicado',
-    excerpt: ''
+    n_titulo: '',
+    n_contenido: '',
+    n_imagen: '',
+    n_fecha_publicacion: new Date().toISOString().split('T')[0],
+    n_estado: 'ACTIVA'
   });
 
+  const fetchNoticias = async () => {
+    setLoading(true);
+    try {
+      const data = await getNoticias();
+      setPosts(data || []);
+    } catch (err) {
+      console.error('Error al cargar noticias:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNoticias();
+  }, []);
+
   const handleOpenModal = (post = null) => {
+    setErrorMessage('');
     if (post) {
       setEditingPost(post);
-      setFormData({ ...post });
+      const pubDate = post.n_fecha_publicacion 
+        ? new Date(post.n_fecha_publicacion).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+      setFormData({
+        n_titulo: post.n_titulo || '',
+        n_contenido: post.n_contenido || '',
+        n_imagen: post.n_imagen || '',
+        n_fecha_publicacion: pubDate,
+        n_estado: post.n_estado || 'ACTIVA'
+      });
     } else {
       setEditingPost(null);
       setFormData({
-        title: '',
-        category: 'Nutrición & Rutinas',
-        author: 'Admin BodyHealth',
-        publishDate: new Date().toISOString().split('T')[0],
-        views: 0,
-        status: 'Publicado',
-        excerpt: ''
+        n_titulo: '',
+        n_contenido: '',
+        n_imagen: '',
+        n_fecha_publicacion: new Date().toISOString().split('T')[0],
+        n_estado: 'ACTIVA'
       });
     }
     setShowModal(true);
@@ -83,39 +68,71 @@ const PublicacionesView = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingPost(null);
+    setErrorMessage('');
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
-
-    if (editingPost) {
-      setPosts(posts.map(p => p.id === editingPost.id ? { ...formData, id: editingPost.id } : p));
-    } else {
-      const newPost = {
-        ...formData,
-        id: Date.now()
-      };
-      setPosts([newPost, ...posts]);
+    if (!formData.n_titulo.trim() || !formData.n_contenido.trim()) {
+      setErrorMessage('El título y el contenido son requeridos.');
+      return;
     }
-    handleCloseModal();
+
+    setSaving(true);
+    setErrorMessage('');
+
+    try {
+      if (editingPost) {
+        await updateNoticia(editingPost.n_id, {
+          ...formData
+        });
+      } else {
+        await createNoticia({
+          ...formData,
+          n_u_id: user?.u_id || null
+        });
+      }
+      await fetchNoticias();
+      handleCloseModal();
+    } catch (err) {
+      console.error('Error al guardar noticia:', err);
+      setErrorMessage(err.response?.data?.message || 'Ocurrió un error al guardar la publicación.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar esta publicación?')) {
-      setPosts(posts.filter(p => p.id !== id));
+      try {
+        await deleteNoticia(id);
+        await fetchNoticias();
+      } catch (err) {
+        console.error('Error al eliminar noticia:', err);
+        alert('No se pudo eliminar la noticia.');
+      }
     }
   };
 
   const filteredPosts = posts.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'Todas' || p.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const title = p.n_titulo || '';
+    const content = p.n_contenido || '';
+    const author = p.autor_nombre || '';
+
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          author.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const isActiva = p.n_estado === 'ACTIVA' || p.n_estado === 'Publicado';
+    const matchesStatus = statusFilter === 'Todas' || 
+      (statusFilter === 'ACTIVA' && isActiva) || 
+      (statusFilter === 'INACTIVA' && !isActiva);
+
+    return matchesSearch && matchesStatus;
   });
 
-  const totalViews = posts.reduce((acc, curr) => acc + Number(curr.views || 0), 0);
+  const totalActivas = posts.filter(p => p.n_estado === 'ACTIVA' || p.n_estado === 'Publicado').length;
+  const totalInactivas = posts.filter(p => p.n_estado === 'INACTIVA' || p.n_estado === 'Borrador').length;
 
   return (
     <div>
@@ -125,7 +142,7 @@ const PublicacionesView = () => {
           <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--error)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Administración</span>
           <h2 style={{ fontSize: '2.25rem', fontWeight: '700', marginTop: '0.5rem', marginBottom: '0.5rem' }}>Gestión de Publicaciones</h2>
           <p style={{ color: 'var(--on-surface-variant)', fontSize: '0.875rem', maxWidth: '42rem' }}>
-            Crea, edita y gestiona las noticias, anuncios, consejos de salud y publicaciones del blog.
+            Crea, edita y gestiona las noticias y publicaciones del gimnasio en la Landing Page.
           </p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -138,28 +155,26 @@ const PublicacionesView = () => {
       <section className="stats-grid">
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Total Artículos</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Total Noticias</span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{posts.length}</span>
           </div>
-          <span className="badge badge-success">4 Publicados</span>
+          <span className="badge badge-primary">Base de Datos</span>
         </div>
 
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Vistas Acumuladas</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalViews.toLocaleString()}</span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Publicadas (Activas)</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalActivas}</span>
           </div>
-          <span className="badge badge-primary">Lecturas Totales</span>
+          <span className="badge badge-success">Visibles en Landing</span>
         </div>
 
         <div className="stat-card">
           <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Borradores</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              {posts.filter(p => p.status === 'Borrador').length}
-            </span>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>Inactivas / Borradores</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalInactivas}</span>
           </div>
-          <span className="badge badge-warning">En revisión</span>
+          <span className="badge badge-warning">Ocultas</span>
         </div>
       </section>
 
@@ -176,17 +191,15 @@ const PublicacionesView = () => {
           />
         </div>
         <div className="admin-filter-group">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>CATEGORÍA:</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#78716c' }}>ESTADO:</span>
           <select
             className="admin-select"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="Todas">Todas</option>
-            <option value="Nutrición & Rutinas">Nutrición & Rutinas</option>
-            <option value="Salud">Salud</option>
-            <option value="Anuncios">Anuncios</option>
-            <option value="Bienestar">Bienestar</option>
+            <option value="ACTIVA">Activas (Publicadas)</option>
+            <option value="INACTIVA">Inactivas (Ocultas)</option>
           </select>
         </div>
       </div>
@@ -197,59 +210,79 @@ const PublicacionesView = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Título / Extracto</th>
-                <th>Categoría</th>
+                <th>Imagen</th>
+                <th>Título / Contenido</th>
                 <th>Autor</th>
                 <th>Fecha Publicación</th>
-                <th>Vistas</th>
                 <th>Estado</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPosts.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                    Cargando noticias de la base de datos...
+                  </td>
+                </tr>
+              ) : filteredPosts.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
                     No se encontraron publicaciones.
                   </td>
                 </tr>
               ) : (
-                filteredPosts.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div>
-                        <p style={{ fontSize: '0.875rem', fontWeight: '700', color: '#1c1917' }}>{p.title}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#78716c', maxWidth: '20rem' }}>{p.excerpt}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge badge-primary">{p.category}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e', fontWeight: '500' }}>{p.author}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{p.publishDate}</span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#78716c' }}>
-                        <Eye size={14} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>{p.views}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`badge ${p.status === 'Publicado' ? 'badge-success' : 'badge-warning'}`}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(p.id)} title="Eliminar"><Trash2 size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredPosts.map((p) => {
+                  const isActiva = p.n_estado === 'ACTIVA' || p.n_estado === 'Publicado';
+                  const pubDate = p.n_fecha_publicacion 
+                    ? new Date(p.n_fecha_publicacion).toLocaleDateString('es-CO')
+                    : 'Sin fecha';
+
+                  return (
+                    <tr key={p.n_id}>
+                      <td style={{ width: '60px' }}>
+                        {p.n_imagen ? (
+                          <img 
+                            src={p.n_imagen} 
+                            alt={p.n_titulo} 
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px' }} 
+                          />
+                        ) : (
+                          <div style={{ width: '48px', height: '48px', backgroundColor: '#e7e5e4', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ImageIcon size={20} color="#a8a29e" />
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: '700', color: '#1c1917', marginBottom: '0.25rem' }}>{p.n_titulo}</p>
+                          <p style={{ fontSize: '0.75rem', color: '#78716c', maxWidth: '24rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {p.n_contenido}
+                          </p>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#57534e', fontWeight: '500' }}>
+                          {p.autor_nombre || 'Admin BodyHealth'}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#57534e' }}>{pubDate}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${isActiva ? 'badge-success' : 'badge-warning'}`}>
+                          {isActiva ? 'ACTIVA' : 'INACTIVA'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => handleOpenModal(p)} title="Editar"><Edit size={18} /></button>
+                          <button className="btn-icon danger" onClick={() => handleDelete(p.n_id)} title="Eliminar"><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -264,44 +297,25 @@ const PublicacionesView = () => {
               <h3>{editingPost ? 'Editar Publicación' : 'Añadir Nueva Publicación'}</h3>
               <button className="btn-icon" onClick={handleCloseModal}><X size={20} /></button>
             </div>
+            
+            {errorMessage && (
+              <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '0.75rem 1rem', fontSize: '0.875rem', borderRadius: '4px', margin: '1rem 1rem 0 1rem' }}>
+                {errorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSave}>
               <div className="admin-modal-body">
                 <div className="admin-form-group">
-                  <label>Título de la Publicación</label>
+                  <label>Título de la Publicación *</label>
                   <input
                     type="text"
                     className="admin-input"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Ej. 5 Rutinas de Cardio en Ayunas"
+                    value={formData.n_titulo}
+                    onChange={(e) => setFormData({ ...formData, n_titulo: e.target.value })}
+                    placeholder="Ej. 5 Ejercicios Clave para Hipertrofia Muscular"
                     required
                   />
-                </div>
-
-                <div className="admin-grid-2">
-                  <div className="admin-form-group">
-                    <label>Categoría</label>
-                    <select
-                      className="admin-select"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      <option value="Nutrición & Rutinas">Nutrición & Rutinas</option>
-                      <option value="Salud">Salud</option>
-                      <option value="Anuncios">Anuncios</option>
-                      <option value="Bienestar">Bienestar</option>
-                    </select>
-                  </div>
-                  <div className="admin-form-group">
-                    <label>Autor</label>
-                    <input
-                      type="text"
-                      className="admin-input"
-                      value={formData.author}
-                      onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                      required
-                    />
-                  </div>
                 </div>
 
                 <div className="admin-grid-2">
@@ -310,38 +324,54 @@ const PublicacionesView = () => {
                     <input
                       type="date"
                       className="admin-input"
-                      value={formData.publishDate}
-                      onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
+                      value={formData.n_fecha_publicacion}
+                      onChange={(e) => setFormData({ ...formData, n_fecha_publicacion: e.target.value })}
                     />
                   </div>
                   <div className="admin-form-group">
                     <label>Estado</label>
                     <select
                       className="admin-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      value={formData.n_estado}
+                      onChange={(e) => setFormData({ ...formData, n_estado: e.target.value })}
                     >
-                      <option value="Publicado">Publicado</option>
-                      <option value="Borrador">Borrador</option>
+                      <option value="ACTIVA">ACTIVA (Visible en Landing)</option>
+                      <option value="INACTIVA">INACTIVA (Oculta)</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="admin-form-group">
-                  <label>Extracto / Resumen</label>
+                  <label>URL de la Imagen Descriptiva</label>
+                  <input
+                    type="url"
+                    className="admin-input"
+                    value={formData.n_imagen}
+                    onChange={(e) => setFormData({ ...formData, n_imagen: e.target.value })}
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Contenido / Resumen de la Noticia *</label>
                   <textarea
                     className="admin-textarea"
-                    rows="3"
-                    value={formData.excerpt}
-                    onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    placeholder="Escribe un breve resumen descriptivo..."
+                    rows="5"
+                    value={formData.n_contenido}
+                    onChange={(e) => setFormData({ ...formData, n_contenido: e.target.value })}
+                    placeholder="Escribe el contenido de la publicación..."
                     required
                   />
                 </div>
               </div>
+
               <div className="admin-modal-footer">
-                <button type="button" className="btn-secondary" onClick={handleCloseModal}>Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Publicación</button>
+                <button type="button" className="btn-secondary" onClick={handleCloseModal} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? 'Guardando...' : 'Guardar Publicación'}
+                </button>
               </div>
             </form>
           </div>

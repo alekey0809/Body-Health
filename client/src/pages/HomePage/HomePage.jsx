@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, MapPin, Clock, CheckCircle, ArrowUpRight, Share2, AtSign, Phone } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, CheckCircle, ArrowUpRight, Share2, AtSign, Phone, X, Calendar, User } from 'lucide-react';
 import { getPlanes } from '../../services/planService';
+import { getNoticias } from '../../services/noticiaService';
 import './HomePage.css';
+
+const fallbackImages = [
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD--EPeexjQ4pcMZ9AZsPTiszFiJyl9GP38aOobdQS5n7uxIBL9SBPLtu9RvRftdbNz-QpD4TBbjpgO2ON49YMMS0OBjdvxUnYMRC18gDiCYlPKpDmHui_8kpxFr15pvdKLm6Cy0_w2bu8B10IKcEtoGtBWr_HSyVsx6Iluj5BdxX9wB6stq4e2omsBmH_jGhs12dusaZ34419ewMQKwdLXzhiCffnEKxGhKQXwpLpnfnBZquvctSotSlVfV_7rjHwODNnb6G7vMIU",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuACH8Wa322I4hKi4uGEzW88GXa1MI5SgMMDwyRDSYsKmidKSZegHzoWde__K3j6yDZoPfI--VmqiSMSzx5kqze8W-6ISBv1LpNvTTdpWerqIQ1fTfEa9pWN_CIV-WGCdHsHFEvpKUSCbl-HcK4q8nCFMarFk1XyqYvdzPpmfQfZMceUz8DILR4v4G_6JpwBiTYaxmQTJshaJkWAxxIvi7RBonZ3VxvwMOIBpsgUPymu6w8CBwdiYibdYSgmKV9czong0ga35j3c2ac",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAfYObRVaSy3_fRWvsOa0pclKKlZuSE0Isk6suSBJbsaQCZQ8r74VMJtOKm36AUbj-txura2YIvH12kEMdVVwtWwQlDi-akyghTrv7UUr-jiVap55xr0A0abIyKc75WoeYH00HKOlfdlQ2gpfwsjy0V3kvYxST4zuTqsl04ypKMcp1lnUzMw4TXVo1IK96sFeHPJDEYPoO-7uW8Nqltk3p4ScbNgDrfuvYzh3l8cLKOO0zHlxEUv54frO1AlLVNUcfnjxH0EzIGqfA",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuDPhwvb3NOxNEARMN9wkyx-xhCzgcH8Xev3KXQB5o6Rln9FNHH29pd5INA7nVDzfMum_CNuk-AjZ3rsC_l6y_Tky-xm8qTmEwSZOAZMk9-4whTX38jA7pz89fVVkADOUOXiMKkyP_jTceywqYSzBM8vDpH15hWy0Rq1HHRXijzuz2fw3bcqMH6rZ8ZvWFzSWJr_WR1IFmKt0KdlZlJlkPtYTIgw2ySEOv3yeSpnVZIXqI_-JVO4Z0iApxY6kUds43HtqyW2sg4Xd5M"
+];
 
 const HomePage = () => {
   const [planes, setPlanes] = useState([]);
+  const [noticias, setNoticias] = useState([]);
+  const [selectedNoticia, setSelectedNoticia] = useState(null);
 
   useEffect(() => {
-    const fetchPlanes = async () => {
-      const data = await getPlanes();
-      setPlanes(data);
+    const fetchData = async () => {
+      const planesData = await getPlanes();
+      setPlanes(planesData || []);
+
+      const noticiasData = await getNoticias('ACTIVA');
+      setNoticias(noticiasData || []);
     };
-    fetchPlanes();
+    fetchData();
   }, []);
 
   return (
@@ -149,7 +162,6 @@ const HomePage = () => {
           </div>
         </section>
 
-
         {/* Noticias Section */}
         <section className="home-news" id="noticias">
           <div className="home-container">
@@ -165,42 +177,86 @@ const HomePage = () => {
             </div>
             
             <div className="news-grid">
-              {/* News Card 1 (Large) */}
-              <div className="news-card-large">
-                <img alt="Gym training" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD--EPeexjQ4pcMZ9AZsPTiszFiJyl9GP38aOobdQS5n7uxIBL9SBPLtu9RvRftdbNz-QpD4TBbjpgO2ON49YMMS0OBjdvxUnYMRC18gDiCYlPKpDmHui_8kpxFr15pvdKLm6Cy0_w2bu8B10IKcEtoGtBWr_HSyVsx6Iluj5BdxX9wB6stq4e2omsBmH_jGhs12dusaZ34419ewMQKwdLXzhiCffnEKxGhKQXwpLpnfnBZquvctSotSlVfV_7rjHwODNnb6G7vMIU" />
-                <div className="news-overlay">
-                  <span className="news-badge">Evento Especial</span>
-                  <h3>Masterclass de Powerlifting con Alex Kovac</h3>
-                </div>
-              </div>
+              {noticias.length === 0 ? (
+                <p style={{ color: 'var(--on-surface-variant)', fontSize: '0.875rem' }}>No hay noticias publicadas en este momento.</p>
+              ) : (
+                noticias.map((item, index) => {
+                  const defaultImg = fallbackImages[index % fallbackImages.length];
+                  const imgSrc = item.n_imagen || defaultImg;
+                  
+                  let cardClass = "news-card-small";
+                  let overlayClass = "news-overlay-small";
+                  
+                  if (index === 0) {
+                    cardClass = "news-card-large";
+                    overlayClass = "news-overlay";
+                  } else if (index === 3 || (index > 3 && index % 4 === 3)) {
+                    cardClass = "news-card-wide";
+                    overlayClass = "news-overlay-wide";
+                  }
 
-              {/* News Card 2 */}
-              <div className="news-card-small">
-                <img alt="Yoga session" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACH8Wa322I4hKi4uGEzW88GXa1MI5SgMMDwyRDSYsKmidKSZegHzoWde__K3j6yDZoPfI--VmqiSMSzx5kqze8W-6ISBv1LpNvTTdpWerqIQ1fTfEa9pWN_CIV-WGCdHsHFEvpKUSCbl-HcK4q8nCFMarFk1XyqYvdzPpmfQfZMceUz8DILR4v4G_6JpwBiTYaxmQTJshaJkWAxxIvi7RBonZ3VxvwMOIBpsgUPymu6w8CBwdiYibdYSgmKV9czong0ga35j3c2ac" />
-                <div className="news-overlay-small">
-                  <h4>Nuevas Sesiones de Yoga Flow</h4>
-                </div>
-              </div>
-
-              {/* News Card 3 */}
-              <div className="news-card-small">
-                <img alt="Nutrition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfYObRVaSy3_fRWvsOa0pclKKlZuSE0Isk6suSBJbsaQCZQ8r74VMJtOKm36AUbj-txura2YIvH12kEMdVVwtWwQlDi-akyghTrv7UUr-jiVap55xr0A0abIyKc75WoeYH00HKOlfdlQ2gpfwsjy0V3kvYxST4zuTqsl04ypKMcp1lnUzMw4TXVo1IK96sFeHPJDEYPoO-7uW8Nqltk3p4ScbNgDrfuvYzh3l8cLKOO0zHlxEUv54frO1AlLVNUcfnjxH0EzIGqfA" />
-                <div className="news-overlay-small">
-                  <h4>Guía Nutricional Verano 2024</h4>
-                </div>
-              </div>
-
-              {/* News Card 4 (Wide) */}
-              <div className="news-card-wide">
-                <img alt="Gym technology" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPhwvb3NOxNEARMN9wkyx-xhCzgcH8Xev3KXQB5o6Rln9FNHH29pd5INA7nVDzfMum_CNuk-AjZ3rsC_l6y_Tky-xm8qTmEwSZOAZMk9-4whTX38jA7pz89fVVkADOUOXiMKkyP_jTceywqYSzBM8vDpH15hWy0Rq1HHRXijzuz2fw3bcqMH6rZ8ZvWFzSWJr_WR1IFmKt0KdlZlJlkPtYTIgw2ySEOv3yeSpnVZIXqI_-JVO4Z0iApxY6kUds43HtqyW2sg4Xd5M" />
-                <div className="news-overlay-wide">
-                  <h4>Renovación Tecnológica: Equipamiento 2.0</h4>
-                </div>
-              </div>
+                  return (
+                    <div 
+                      key={item.n_id || index} 
+                      className={cardClass}
+                      onClick={() => setSelectedNoticia({ ...item, imgSrc })}
+                      title="Haz clic para ver el detalle de la noticia"
+                    >
+                      <img alt={item.n_titulo} src={imgSrc} />
+                      <div className={overlayClass}>
+                        {index === 0 && <span className="news-badge">Noticia Destacada</span>}
+                        {index === 0 ? <h3>{item.n_titulo}</h3> : <h4>{item.n_titulo}</h4>}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </section>
       </main>
+
+      {/* Modal Detalle de Noticia */}
+      {selectedNoticia && (
+        <div className="news-modal-overlay" onClick={() => setSelectedNoticia(null)}>
+          <div className="news-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="news-modal-close-btn" 
+              onClick={() => setSelectedNoticia(null)} 
+              aria-label="Cerrar modal"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="news-modal-hero">
+              <img src={selectedNoticia.imgSrc} alt={selectedNoticia.n_titulo} />
+              <div className="news-modal-hero-gradient"></div>
+            </div>
+
+            <div className="news-modal-body">
+              <div className="news-modal-meta">
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <User size={14} color="var(--primary)" />
+                  {selectedNoticia.autor_nombre || 'Admin BodyHealth'}
+                </span>
+                {selectedNoticia.n_fecha_publicacion && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <Calendar size={14} color="var(--primary)" />
+                    {new Date(selectedNoticia.n_fecha_publicacion).toLocaleDateString('es-CO', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                )}
+              </div>
+
+              <h2 className="news-modal-title">{selectedNoticia.n_titulo}</h2>
+              <p className="news-modal-text">{selectedNoticia.n_contenido}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="home-footer">

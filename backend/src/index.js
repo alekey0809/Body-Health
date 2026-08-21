@@ -6,6 +6,7 @@ import planRoutes from './routes/plan.routes.js';
 import entrenadorRoutes from './routes/entrenador.routes.js';
 import pagoRoutes from './routes/pago.routes.js';
 import asistenciaRoutes from './routes/asistencia.routes.js';
+import noticiaRoutes from './routes/noticia.routes.js';
 
 const app = express();
 
@@ -27,6 +28,8 @@ app.use('/api/entrenadores', entrenadorRoutes);
 app.use('/api/pagos', pagoRoutes);
 // Rutas de Asistencias (PostgreSQL)
 app.use('/api/asistencia', asistenciaRoutes);
+// Rutas de Noticias / Publicaciones (PostgreSQL)
+app.use('/api/noticias', noticiaRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
