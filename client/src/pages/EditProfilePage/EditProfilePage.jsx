@@ -111,7 +111,7 @@ const EditProfilePage = () => {
           aria-label="Volver al Dashboard"
         >
           <ArrowLeft size={20} />
-          <span className="back-btn-text">Volver al Dashboard</span>
+          <span className="back-btn-text">Volver </span>
         </button>
         <h2>Editar Perfil</h2>
       </header>

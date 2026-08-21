@@ -5,6 +5,7 @@ import userRoutes from './routes/user.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import entrenadorRoutes from './routes/entrenador.routes.js';
 import pagoRoutes from './routes/pago.routes.js';
+import asistenciaRoutes from './routes/asistencia.routes.js';
 
 const app = express();
 
@@ -24,6 +25,8 @@ app.use('/api/planes', planRoutes);
 app.use('/api/entrenadores', entrenadorRoutes);
 // Rutas de Pagos
 app.use('/api/pagos', pagoRoutes);
+// Rutas de Asistencias (PostgreSQL)
+app.use('/api/asistencia', asistenciaRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
