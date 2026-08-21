@@ -24,21 +24,36 @@
 }
 
 .back-btn {
-  background: none;
-  border: none;
-  color: var(--on-surface-variant);
+  background-color: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-  padding: 0.5rem;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .back-btn:hover {
   color: var(--primary);
-  background-color: var(--surface-container-low);
+  border-color: var(--primary);
+  background-color: var(--surface-container-high);
+  transform: translateX(-2px);
+}
+
+.back-btn-text {
+  display: inline-block;
+}
+
+.profile-loading-box {
+  padding: 2.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--on-surface-variant);
 }
 
 .profile-main {

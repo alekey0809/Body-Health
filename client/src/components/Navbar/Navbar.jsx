@@ -20,8 +20,8 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // No mostrar navbar en login, registro, checkout ni admin
-  const hideNavbarRoutes = ['/login', '/register', '/checkout', '/payment-confirmation', '/admin'];
+  // No mostrar navbar en login, registro, checkout, admin ni perfil
+  const hideNavbarRoutes = ['/login', '/register', '/checkout', '/payment-confirmation', '/admin', '/perfil'];
   if (hideNavbarRoutes.includes(location.pathname)) {
     return null;
   }
