@@ -76,7 +76,7 @@ const HomePage = () => {
                 <span className="section-tag">Presencia</span>
                 <h2 className="section-heading">Nuestra Sede</h2>
                 <p className="section-desc">
-                  Ubicados en el corazón del distrito financiero, ofrecemos un refugio de alto rendimiento para el profesional moderno.
+                      Ubicados en el corazón del barrio Fátima, ofrecemos un espacio de bienestar y alto rendimiento diseñado para quienes buscan llevar su entrenamiento al siguiente nivel. 
                 </p>
                 
                 <div className="location-details">
@@ -85,8 +85,8 @@ const HomePage = () => {
                       <MapPin size={24} />
                     </div>
                     <div>
-                      <p className="detail-title">Av. Libertador 1450</p>
-                      <p className="detail-sub">Buenos Aires, Argentina</p>
+                      <p className="detail-title">Cra34 #65-69</p>
+                      <p className="detail-sub">Fátima, Manizales</p>
                     </div>
                   </div>
                   
@@ -96,7 +96,25 @@ const HomePage = () => {
                     </div>
                     <div>
                       <p className="detail-title">Lunes a Viernes</p>
-                      <p className="detail-sub">06:00 — 23:00</p>
+                      <p className="detail-sub"> 5:00 am - 10:00 pm (continuo )</p>
+                    </div>
+                  </div>
+                   <div className="detail-item">
+                    <div className="detail-icon">
+                      <Clock size={24} />
+                    </div>
+                    <div>
+                      <p className="detail-title">sabados y festivos</p>
+                      <p className="detail-sub">8:00 am - 4:00 pm</p>
+                    </div>
+                  </div>
+                   <div className="detail-item">
+                    <div className="detail-icon">
+                      <Clock size={24} />
+                    </div>
+                    <div>
+                      <p className="detail-title">domingos</p>
+                      <p className="detail-sub"> 10:00 am - 1:00 pm</p>
                     </div>
                   </div>
                 </div>
@@ -171,8 +189,7 @@ const HomePage = () => {
                 <h2 className="section-heading">Últimas Noticias</h2>
               </div>
               <div className="social-links">
-                <a href="#">Instagram <ArrowUpRight size={14} /></a>
-                <a href="#">Facebook <ArrowUpRight size={14} /></a>
+                <a href="https://www.instagram.com/bodyhealth.gym/" target="_blank" rel="noopener noreferrer" >Instagram <ArrowUpRight size={14} /></a>
               </div>
             </div>
             
@@ -284,9 +301,9 @@ const HomePage = () => {
           <div className="footer-contact-col">
             <h4>Contacto</h4>
             <ul>
-              <li><Phone size={14} className="contact-icon" /> +54 11 4455-8899</li>
-              <li><AtSign size={14} className="contact-icon" /> curator@alexandria.gym</li>
-              <li><MapPin size={14} className="contact-icon" /> Recoleta, CABA</li>
+              <li><Phone size={14} className="contact-icon" /> +57 317 730 2158</li>
+              <li><AtSign size={14} className="contact-icon" /> c</li>
+              <li><MapPin size={14} className="contact-icon" /> Cra34 #65-69 (fatima, Manizales)</li>
             </ul>
           </div>
           
