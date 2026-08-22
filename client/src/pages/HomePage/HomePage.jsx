@@ -105,7 +105,7 @@ const HomePage = () => {
                     </div>
                     <div>
                       <p className="detail-title">sabados y festivos</p>
-                      <p className="detail-sub">8:00 am - 4:00 pm</p>
+                      <p className="detail-sub"> 9:00 am - 4:00 pm</p>
                     </div>
                   </div>
                    <div className="detail-item">
@@ -302,7 +302,7 @@ const HomePage = () => {
             <h4>Contacto</h4>
             <ul>
               <li><Phone size={14} className="contact-icon" /> +57 317 730 2158</li>
-              <li><AtSign size={14} className="contact-icon" /> c</li>
+              <li><AtSign size={14} className="contact-icon" /> bodyhealthgym0116@gmail.com</li>
               <li><MapPin size={14} className="contact-icon" /> Cra34 #65-69 (fatima, Manizales)</li>
             </ul>
           </div>
