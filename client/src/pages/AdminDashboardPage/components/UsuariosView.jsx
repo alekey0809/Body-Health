@@ -15,9 +15,9 @@ const TIPOS_DOC = [
 ];
 
 const ROLES = [
-  { id: 1, label: 'Cliente', color: '#78716c', bg: '#f5f5f4' },
-  { id: 2, label: 'Entrenador', color: '#0369a1', bg: '#e0f2fe' },
-  { id: 3, label: 'Administrador', color: '#dc2626', bg: '#fef2f2' },
+  { id: 1, label: 'Administrador', color: '#dc2626', bg: '#fef2f2' },
+  { id: 2, label: 'Usuario', color: '#78716c', bg: '#f5f5f4' },
+  { id: 3, label: 'Entrenador', color: '#0369a1', bg: '#e0f2fe' },
 ];
 
 const ESTADOS = [
@@ -228,8 +228,8 @@ const UsuariosView = () => {
 
   // ── Estadísticas ──────────────────────────────────────────────────────────
   const totalActivos = users.filter((u) => Number(u.u_eg_id) === 1).length;
-  const totalAdmins = users.filter((u) => Number(u.u_r_id) === 3).length;
-  const totalEntrenadores = users.filter((u) => Number(u.u_r_id) === 2).length;
+  const totalAdmins = users.filter((u) => Number(u.u_r_id) === 1).length;
+  const totalEntrenadores = users.filter((u) => Number(u.u_r_id) === 3).length;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -305,7 +305,7 @@ const UsuariosView = () => {
             </span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalEntrenadores}</span>
           </div>
-          <span className="badge badge-neutral">u_r_id = 2</span>
+          <span className="badge badge-neutral">u_r_id = 3</span>
         </div>
 
         <div className="stat-card">
@@ -315,7 +315,7 @@ const UsuariosView = () => {
             </span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{totalAdmins}</span>
           </div>
-          <span className="badge badge-error" style={{ fontSize: '0.65rem' }}>u_r_id = 3</span>
+          <span className="badge badge-error" style={{ fontSize: '0.65rem' }}>u_r_id = 1</span>
         </div>
       </section>
 
@@ -461,7 +461,7 @@ const UsuariosView = () => {
                           borderRadius: '999px', padding: '0.2rem 0.65rem',
                           fontSize: '0.7rem', fontWeight: '700',
                         }}>
-                          {rol.id === 3 ? <Shield size={11} /> : rol.id === 2 ? <User size={11} /> : null}
+                          {rol.id === 1 ? <Shield size={11} /> : rol.id === 3 ? <User size={11} /> : null}
                           {rol.label}
                         </span>
                       </td>

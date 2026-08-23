@@ -3,16 +3,23 @@ import {
     getPagos,
     getPagoById,
     createPago,
-    updatePago,
-    deletePago
+    deletePago,
+    getUserByCedula,
+    getPlanes
 } from '../controllers/pago.controller.js';
 
 const router = Router();
 
+// Autocomplete: buscar usuario por cédula
+router.get('/usuario/cedula/:cedula', getUserByCedula);
+
+// Planes para el select dinámico
+router.get('/planes', getPlanes);
+
+// CRUD Pagos (Facturas)
 router.get('/', getPagos);
 router.get('/:id', getPagoById);
 router.post('/', createPago);
-router.put('/:id', updatePago);
 router.delete('/:id', deletePago);
 
 export default router;
