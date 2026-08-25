@@ -30,23 +30,24 @@ export const FacturaModel = {
         try {
             await client.query('BEGIN');
 
-            // 1. Insertar factura
+            // 1. Insertar factura (usar defaults: f_em_id=1, f_ep_id=1 'PENDIENTE')
             const facturaRes = await client.query(
-                `INSERT INTO factura (f_u_id, f_valor_total, f_fecha_hora)
-                 VALUES ($1, $2, NOW())
-                 RETURNING f_id, f_fecha_hora`,
+                `INSERT INTO factura 
+                 (f_u_id, f_concepto_pago, f_valor_total, f_impuestos, f_medio_pago, f_fecha_hora)
+                 VALUES ($1, 'Inscripción Plan', $2, 0, 'Efectivo', NOW())
+                 RETURNING f_id, f_fecha_hora, f_ep_id`,
                 [u_id, precio_unitario]
             );
             const { f_id, f_fecha_hora } = facturaRes.rows[0];
 
-            // 2. Insertar detalle_factura
+            // 2. Insertar detalle_factura (df_cantidad default 1)
             await client.query(
                 `INSERT INTO detalle_factura (f_id, pe_id, df_precio_unitario, df_subtotal)
                  VALUES ($1, $2, $3, $4)`,
                 [f_id, pe_id, precio_unitario, precio_unitario]
             );
 
-            // 3. Insertar membresia (30 días desde hoy)
+            // 3. Insertar membresia (30 días desde hoy, m_eg_id default 1)
             const membresiaRes = await client.query(
                 `INSERT INTO membresia (m_u_id, m_pe_id, f_id, m_fecha_inicio, m_fecha_vencimiento)
                  VALUES ($1, $2, $3, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days')
@@ -72,6 +73,8 @@ export const FacturaModel = {
                 f.f_id,
                 f.f_valor_total,
                 f.f_fecha_hora,
+                f.f_ep_id,
+                ep.ep_nombre AS estado_pago,
                 u.u_id,
                 u.u_numero_documento,
                 u.u_nombres,
@@ -89,6 +92,7 @@ export const FacturaModel = {
             JOIN detalle_factura df ON df.f_id = f.f_id
             JOIN plan_entrenamiento pe ON df.pe_id = pe.pe_id
             LEFT JOIN membresia m ON m.f_id = f.f_id
+            LEFT JOIN estado_pago ep ON f.f_ep_id = ep.ep_id
             ORDER BY f.f_fecha_hora DESC
         `;
         const { rows } = await pool.query(query);
@@ -99,7 +103,8 @@ export const FacturaModel = {
     getById: async (f_id) => {
         const query = `
             SELECT
-                f.f_id, f.f_valor_total, f.f_fecha_hora,
+                f.f_id, f.f_valor_total, f.f_fecha_hora, f.f_ep_id,
+                ep.ep_nombre AS estado_pago,
                 u.u_id, u.u_numero_documento, u.u_nombres, u.u_apellidos, u.u_correo_electronico,
                 pe.pe_id, pe.pe_nombre,
                 df.df_precio_unitario, df.df_subtotal,
@@ -109,9 +114,19 @@ export const FacturaModel = {
             JOIN detalle_factura df ON df.f_id = f.f_id
             JOIN plan_entrenamiento pe ON df.pe_id = pe.pe_id
             LEFT JOIN membresia m ON m.f_id = f.f_id
+            LEFT JOIN estado_pago ep ON f.f_ep_id = ep.ep_id
             WHERE f.f_id = $1
         `;
         const { rows } = await pool.query(query, [f_id]);
+        return rows[0] || null;
+    },
+
+    // Actualizar estado de pago de una factura
+    updateEstadoPago: async (f_id, ep_id) => {
+        const query = `
+            UPDATE factura SET f_ep_id = $2 WHERE f_id = $1 RETURNING f_id, f_ep_id
+        `;
+        const { rows } = await pool.query(query, [f_id, ep_id]);
         return rows[0] || null;
     },
 

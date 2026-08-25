@@ -58,16 +58,59 @@ export const getUserAttendances = async (req, res) => {
   }
 };
 
+// Verificar membresía activa del usuario
+export const checkMembershipStatus = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    if (!userId || !isUUID(userId)) {
+      return res.status(400).json({ 
+        ok: false, 
+        message: `El ID de usuario '${userId}' no tiene formato UUID válido.` 
+      });
+    }
+
+    console.log('🔍 checkMembershipStatus called for userId:', userId);
+    const membership = await AsistenciaModel.hasActiveMembership(userId);
+    console.log('🔍 Membership result:', membership);
+    return res.status(200).json({
+      ok: true,
+      hasActiveMembership: !!membership,
+      membership: membership || null
+    });
+  } catch (error) {
+    console.error('Error al consultar membresía:', error);
+    return res.status(500).json({ 
+      ok: false, 
+      message: `Error al consultar la base de datos PostgreSQL: ${error.message}`, 
+      error: error.message 
+    });
+  }
+};
+
 // Registrar una nueva asistencia en la base de datos
 export const registerAttendance = async (req, res) => {
   try {
     const userId = req.body.userId || req.body.u_id || req.body.id;
     const observacion = req.body.observacion || req.body.a_observacion || null;
 
+    console.log('🔍 registerAttendance called with userId:', userId);
+
     if (!userId || !isUUID(userId)) {
       return res.status(400).json({ 
         ok: false, 
         message: `El ID de usuario enviado ('${userId}') no es un UUID válido. Por favor cierra sesión e inicia sesión nuevamente.` 
+      });
+    }
+
+    // Validación: Verificar que el usuario tenga membresía activa (pago realizado)
+    const membership = await AsistenciaModel.hasActiveMembership(userId);
+    console.log('🔍 Membership check result:', membership);
+    if (!membership) {
+      return res.status(403).json({
+        ok: false,
+        message: "No tienes una membresía activa. Debes realizar un pago para registrar asistencia.",
+        requiresPayment: true
       });
     }
 
@@ -88,7 +131,8 @@ export const registerAttendance = async (req, res) => {
     return res.status(201).json({
       ok: true,
       message: "¡Asistencia registrada con éxito en PostgreSQL!",
-      attendance: newAttendance
+      attendance: newAttendance,
+      membership: membership
     });
   } catch (error) {
     console.error('Error al guardar asistencia en PostgreSQL:', error);

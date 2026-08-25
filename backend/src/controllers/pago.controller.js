@@ -104,3 +104,22 @@ export const deletePago = async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Error al eliminar pago' });
     }
 };
+
+// PATCH /api/pagos/:id/estado  → actualizar estado de pago
+export const updateEstadoPago = async (req, res) => {
+    const { ep_id } = req.body;
+    const { id } = req.params;
+
+    if (!ep_id || isNaN(parseInt(ep_id, 10))) {
+        return res.status(400).json({ ok: false, message: 'ep_id es requerido y debe ser un número' });
+    }
+
+    try {
+        const updated = await FacturaModel.updateEstadoPago(parseInt(id, 10), parseInt(ep_id, 10));
+        if (!updated) return res.status(404).json({ ok: false, message: 'Pago no encontrado' });
+        return res.json({ ok: true, message: 'Estado actualizado', factura: updated });
+    } catch (error) {
+        console.error('Error al actualizar estado:', error.message);
+        return res.status(500).json({ ok: false, message: 'Error al actualizar estado' });
+    }
+};

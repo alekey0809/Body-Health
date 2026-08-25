@@ -5,7 +5,8 @@ import {
   createPago,
   deletePago,
   getUserByCedula,
-  getPlanesPago
+  getPlanesPago,
+  updateEstadoPago
 } from '../../../services/pagoService';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -33,6 +34,17 @@ const PagosView = () => {
   const [precioBase, setPrecioBase]     = useState('');
   const [saving, setSaving]             = useState(false);
   const [saveMsg, setSaveMsg]           = useState(null);  // { type: 'success'|'error', text }
+
+  // Estados de pago disponibles (orden: 1=PENDIENTE, 2=APROBADO, 3=RECHAZADO, 4=EN_PROCESO, 5=ANULADO)
+  const estadosPago = [
+    { ep_id: 1, nombre: 'PENDIENTE', color: '#f59e0b' },
+    { ep_id: 2, nombre: 'APROBADO', color: '#16a34a' },
+    { ep_id: 3, nombre: 'RECHAZADO', color: 'var(--error)' },
+    { ep_id: 4, nombre: 'EN_PROCESO', color: '#0284c7' },
+    { ep_id: 5, nombre: 'ANULADO', color: '#78716c' },
+  ];
+
+  const [updatingStatus, setUpdatingStatus] = useState(null); // f_id being updated
 
   const cedulaTimer = useRef(null);
 
@@ -98,7 +110,7 @@ const PagosView = () => {
   /* ── Guardar pago ──────────────────────────────────────────────────────── */
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!usuarioInfo || !peId) return;
+    if (!usuarioInfo || !peId || cedStatus !== 'found') return;
     setSaving(true);
     setSaveMsg(null);
     try {
@@ -113,7 +125,11 @@ const PagosView = () => {
         setSaveMsg({ type: 'error', text: result.message || 'Error al registrar el pago' });
       }
     } catch (err) {
-      setSaveMsg({ type: 'error', text: err?.response?.data?.message || 'Error de conexión' });
+      const errorMsg = err?.response?.data?.message || 
+                       err?.message || 
+                       'Error de conexión con el servidor';
+      setSaveMsg({ type: 'error', text: errorMsg });
+      console.error('Error registering payment:', err);
     } finally {
       setSaving(false);
     }
@@ -124,6 +140,25 @@ const PagosView = () => {
     if (!window.confirm(`¿Eliminar la factura #${f_id} y su membresía asociada?`)) return;
     await deletePago(f_id);
     setPagos(prev => prev.filter(p => p.f_id !== f_id));
+  };
+
+  /* ── Actualizar estado de pago ──────────────────────────────────────────── */
+  const handleUpdateEstado = async (f_id, newEpId) => {
+    setUpdatingStatus(f_id);
+    try {
+      const result = await updateEstadoPago(f_id, newEpId);
+      if (result.ok) {
+        setPagos(prev => prev.map(p => 
+          p.f_id === f_id ? { ...p, f_ep_id: newEpId, estado_pago: estadosPago.find(e => e.ep_id === newEpId)?.nombre } : p
+        ));
+      } else {
+        alert('Error: ' + result.message);
+      }
+    } catch (err) {
+      alert('Error de conexión: ' + err.message);
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   /* ── Filtrado ──────────────────────────────────────────────────────────── */
@@ -221,17 +256,19 @@ const PagosView = () => {
                 <th>Plan</th>
                 <th>Monto (COP)</th>
                 <th>Fecha</th>
+                <th>Estado Pago</th>
                 <th>Membresía vence</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>Cargando...</td></tr>
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>Cargando...</td></tr>
               ) : filteredPagos.length === 0 ? (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>No se encontraron registros.</td></tr>
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>No se encontraron registros.</td></tr>
               ) : filteredPagos.map((p) => {
                 const vigente = p.m_fecha_vencimiento && new Date(p.m_fecha_vencimiento) >= new Date();
+                const currentEstado = estadosPago.find(e => e.ep_id === p.f_ep_id) || { nombre: 'DESCONOCIDO', color: '#78716c' };
                 return (
                   <tr key={p.f_id}>
                     <td>
@@ -250,12 +287,35 @@ const PagosView = () => {
                     </td>
                     <td><span style={{ fontSize: '0.75rem', color: '#57534e' }}>{formatDate(p.f_fecha_hora)}</span></td>
                     <td>
+                      <select
+                        value={p.f_ep_id}
+                        onChange={(e) => handleUpdateEstado(p.f_id, parseInt(e.target.value, 10))}
+                        disabled={updatingStatus === p.f_id}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.75rem',
+                          borderRadius: '0.375rem',
+                          border: '1px solid var(--outline-variant)',
+                          backgroundColor: currentEstado.color + '15',
+                          color: currentEstado.color,
+                          fontWeight: '600',
+                          cursor: updatingStatus === p.f_id ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {estadosPago.map(ep => (
+                          <option key={ep.ep_id} value={ep.ep_id} style={{ background: 'white', color: 'black' }}>
+                            {ep.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
                       <span className={`badge ${vigente ? 'badge-success' : 'badge-error'}`}>
                         {formatDate(p.m_fecha_vencimiento)}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn-icon danger" onClick={() => handleDelete(p.f_id)} title="Eliminar factura">
+                      <button className="btn-icon danger" onClick={() => handleDelete(p.f_id)} title="Eliminar factura" disabled={updatingStatus === p.f_id}>
                         <Trash2 size={18} />
                       </button>
                     </td>

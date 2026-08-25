@@ -5,7 +5,8 @@ import {
     createPago,
     deletePago,
     getUserByCedula,
-    getPlanes
+    getPlanes,
+    updateEstadoPago
 } from '../controllers/pago.controller.js';
 
 const router = Router();
@@ -21,5 +22,6 @@ router.get('/', getPagos);
 router.get('/:id', getPagoById);
 router.post('/', createPago);
 router.delete('/:id', deletePago);
+router.patch('/:id/estado', updateEstadoPago);
 
 export default router;

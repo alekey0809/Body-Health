@@ -50,14 +50,17 @@ const CheckoutPage = () => {
     setLoading(true);
     
     try {
-      // Si el usuario no está logueado, intentamos registrarlo silenciosamente
+      // Si el usuario no está logueado, solicitamos confirmación antes de registrar
       if (!user) {
+        if (!window.confirm('No has iniciado sesión. ¿Deseas crear una cuenta para completar el pago?')) {
+          setLoading(false);
+          return;
+        }
         await register({
           ...formData,
           idRol: 1,
           idEstadoGen: 1
         });
-        // Si el registro falla (ej. correo ya existe), el context tirará un error que podemos agarrar
       }
 
       // Simular tiempo de procesamiento de pago

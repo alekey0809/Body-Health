@@ -27,6 +27,8 @@ const DashboardPage = () => {
   const [attendances, setAttendances] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [hasActiveMembership, setHasActiveMembership] = useState(true);
+  const [membershipInfo, setMembershipInfo] = useState(null);
 
   const getUserId = () => user?.id || user?.u_id || user?._id;
 
@@ -42,6 +44,8 @@ const DashboardPage = () => {
     const uid = activeUserId || getUserId();
     if (!uid) return;
 
+    console.log('🔍 fetchAttendanceData called with uid:', uid);
+
     try {
       // 1. Obtener estado del día actual
       const statusRes = await api.get(`/api/asistencia/today/${uid}`);
@@ -54,6 +58,14 @@ const DashboardPage = () => {
       const historyRes = await api.get(`/api/asistencia/user/${uid}`);
       if (historyRes.data.ok) {
         setAttendances(historyRes.data.attendances);
+      }
+
+      // 3. Verificar membresía activa
+      const membershipRes = await api.get(`/api/asistencia/membership/${uid}`);
+      console.log('🔍 Membership response:', membershipRes.data);
+      if (membershipRes.data.ok) {
+        setHasActiveMembership(membershipRes.data.hasActiveMembership);
+        setMembershipInfo(membershipRes.data.membership);
       }
     } catch (err) {
       console.warn('Error al cargar datos de asistencia:', err);
@@ -84,6 +96,7 @@ const DashboardPage = () => {
     if (hasAttendedToday || isSubmitting) return;
 
     const currentUserId = getUserId();
+    console.log('🔍 handleRegisterAttendance - currentUserId:', currentUserId);
     if (!currentUserId) {
       setFeedbackMessage('Error: No se encontró el ID del usuario en sesión.');
       return;
@@ -96,6 +109,7 @@ const DashboardPage = () => {
       const response = await api.post('/api/asistencia/register', {
         userId: currentUserId
       });
+      console.log('🔍 Register attendance response:', response.data);
 
       if (response.data.ok) {
         setHasAttendedToday(true);
@@ -108,6 +122,15 @@ const DashboardPage = () => {
       console.error(err);
       const errMsg = err.response?.data?.message || err.response?.data?.error || 'Error al registrar la asistencia';
       setFeedbackMessage(errMsg);
+      
+      // Si el error es 403 (requiere pago), actualizar estado de membresía
+      if (err.response?.status === 403 && err.response?.data?.requiresPayment) {
+        setHasActiveMembership(false);
+        setMembershipInfo(err.response.data);
+        setTimeout(() => {
+          navigate('/planes');
+        }, 3000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -260,11 +283,25 @@ const DashboardPage = () => {
             </div>
             <div className="card-body">
               <div className="payment-status-box">
-                <div>
-                  <p className="payment-plan">Membresía Trimestral</p>
-                  <p className="payment-date">Vence: 15/Ago/2026</p>
-                </div>
-                <span className="status-badge-green">Al día</span>
+                {membershipInfo ? (
+                  <>
+                    <div>
+                      <p className="payment-plan">{membershipInfo.pe_nombre}</p>
+                      <p className="payment-date">Vence: {new Date(membershipInfo.m_fecha_vencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                    <span className={`status-badge ${hasActiveMembership ? 'status-badge-green' : 'status-badge-red'}`}>
+                      {hasActiveMembership ? 'Al día' : 'Vencida'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="payment-plan">Membresía Trimestral</p>
+                      <p className="payment-date">Vence: 15/Ago/2026</p>
+                    </div>
+                    <span className="status-badge-green">Al día</span>
+                  </>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                 <button className="btn-secondary card-btn" style={{ flex: 1 }}>Historial</button>
@@ -287,12 +324,31 @@ const DashboardPage = () => {
                 </div>
               )}
 
+              {/* Alerta si no tiene membresía activa */}
+              {!hasActiveMembership && (
+                <div className="asistencia-feedback-msg error" style={{ marginBottom: '1rem' }}>
+                  <strong>⚠ Sin membresía activa</strong> - {membershipInfo?.message || 'Debes tener una membresía vigente para registrar asistencia.'}
+                  <button 
+                    onClick={() => navigate('/planes')} 
+                    className="btn-primary card-btn" 
+                    style={{ marginTop: '0.5rem', marginLeft: '0.5rem' }}
+                  >
+                    Ver Planes
+                  </button>
+                </div>
+              )}
+
               {/* Botón Directo de Marcar Asistencia de Hoy */}
               <div className="asistencia-action-box">
                 {hasAttendedToday ? (
                   <button className="asistencia-btn asistencia-btn-completed" disabled>
                     <CheckCircle size={18} />
                     <span>Asistencia Registrada Hoy ✓</span>
+                  </button>
+                ) : !hasActiveMembership ? (
+                  <button className="asistencia-btn asistencia-btn-disabled" disabled>
+                    <Clock size={18} />
+                    <span>Membresía requerida para marcar asistencia</span>
                   </button>
                 ) : (
                   <button 
