@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash, FileText, FileSpreadsheet } from 'lucide-react';
 import {
   getEntrenadores,
   createEntrenador,
   updateEntrenador,
   deleteEntrenador,
 } from '../../../services/entrenadorService';
+import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 // ─── Formulario vacío base ────────────────────────────────────────────────────
 const EMPTY_FORM = {
@@ -73,6 +74,40 @@ const EntrenadoresView = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // ── Columnas para exportación ────────────────────────────────────────────────
+  const exportColumns = [
+    { key: 'en_u_id', header: 'UUID' },
+    { key: 'u_nombres', header: 'Nombres' },
+    { key: 'u_apellidos', header: 'Apellidos' },
+    { key: 'u_correo_electronico', header: 'Correo' },
+    { key: 'en_horario_assigned', header: 'Horario Asignado' },
+    { key: 'en_sueldo_base', header: 'Sueldo Base', format: (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    { key: 'en_fecha_contratacion', header: 'Fecha Contratación', format: (v) => v ? new Date(v).toLocaleDateString('es-ES') : '' }
+  ];
+
+  const handleExportPDF = () => {
+    exportToPDF({
+      data: filteredTrainers,
+      columns: exportColumns,
+      title: 'Reporte de Entrenadores - BodyHealth',
+      filename: `entrenadores_${new Date().toISOString().split('T')[0]}.pdf`,
+      columnStyles: {
+        0: { halign: 'left', cellWidth: 45 },
+        1: { halign: 'left' },
+        2: { halign: 'left' }
+      }
+    });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({
+      data: filteredTrainers,
+      columns: exportColumns,
+      title: 'Reporte de Entrenadores - BodyHealth',
+      filename: `entrenadores_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
 
   // ── Mostrar notificación ──────────────────────────────────────────────────
   const showToast = useCallback((message, type = 'success') => {
@@ -326,6 +361,26 @@ const EntrenadoresView = () => {
               <X size={14} />
             </button>
           )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button
+            className="btn-secondary"
+            onClick={handleExportPDF}
+            disabled={filteredTrainers.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
+            title="Exportar a PDF"
+          >
+            <FileText size={15} />
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={handleExportExcel}
+            disabled={filteredTrainers.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet size={15} />
+          </button>
         </div>
       </div>
 

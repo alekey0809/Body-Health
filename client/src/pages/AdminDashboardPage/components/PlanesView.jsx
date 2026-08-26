@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Dumbbell, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Dumbbell, X, FileText, FileSpreadsheet } from 'lucide-react';
 import { getPlanes, createPlan, updatePlan, deletePlan } from '../../../services/planService';
+import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 const PlanesView = () => {
   const [planes, setPlanes] = useState([]);
@@ -80,6 +81,32 @@ const PlanesView = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // ── Columnas para exportación ────────────────────────────────────────────────
+  const exportColumns = [
+    { key: 'pe_id', header: 'ID', format: (v) => `#${v}` },
+    { key: 'pe_nombre', header: 'Nombre del Plan' },
+    { key: 'pe_precio_base', header: 'Precio Base (USD)', format: (v) => Number(v).toFixed(2) },
+    { key: 'pe_eg_id', header: 'Estado', format: (v) => v === 1 ? 'Activo' : 'Inactivo' }
+  ];
+
+  const handleExportPDF = () => {
+    exportToPDF({
+      data: filteredPlanes,
+      columns: exportColumns,
+      title: 'Reporte de Planes - BodyHealth',
+      filename: `planes_${new Date().toISOString().split('T')[0]}.pdf`
+    });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({
+      data: filteredPlanes,
+      columns: exportColumns,
+      title: 'Reporte de Planes - BodyHealth',
+      filename: `planes_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
+
   return (
     <div>
       {/* Title */}
@@ -151,6 +178,26 @@ const PlanesView = () => {
             <option value="Activo">Activo (eg_id = 1)</option>
             <option value="Inactivo">Inactivo (eg_id != 1)</option>
           </select>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button
+            className="btn-secondary"
+            onClick={handleExportPDF}
+            disabled={filteredPlanes.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPlanes.length === 0 ? 0.5 : 1 }}
+            title="Exportar a PDF"
+          >
+            <FileText size={15} />
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={handleExportExcel}
+            disabled={filteredPlanes.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPlanes.length === 0 ? 0.5 : 1 }}
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet size={15} />
+          </button>
         </div>
       </div>
 

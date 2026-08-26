@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Trash2, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, X, CheckCircle, AlertCircle, Loader2, FileText, FileSpreadsheet } from 'lucide-react';
 import {
   getPagos,
   createPago,
@@ -8,6 +8,7 @@ import {
   getPlanesPago,
   updateEstadoPago
 } from '../../../services/pagoService';
+import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 const formatCOP = (value) =>
@@ -175,6 +176,47 @@ const PagosView = () => {
 
   const totalIngresos = pagos.reduce((acc, p) => acc + Number(p.f_valor_total || 0), 0);
 
+  // ── Columnas para exportación ────────────────────────────────────────────────
+  const exportColumns = [
+    { key: 'f_id', header: 'Factura #', format: (v) => `#${v}` },
+    { key: 'u_nombres', header: 'Nombres' },
+    { key: 'u_apellidos', header: 'Apellidos' },
+    { key: 'u_correo_electronico', header: 'Correo' },
+    { key: 'u_numero_documento', header: 'Cédula' },
+    { key: 'pe_nombre', header: 'Plan' },
+    { key: 'f_valor_total', header: 'Monto (COP)', format: (v) => formatCOP(v) },
+    { key: 'f_fecha_hora', header: 'Fecha', format: (v) => formatDate(v) },
+    { key: 'f_ep_id', header: 'Estado Pago', format: (v) => {
+        const estado = estadosPago.find(e => e.ep_id === v);
+        return estado ? estado.nombre : 'DESCONOCIDO';
+      }
+    },
+    { key: 'm_fecha_vencimiento', header: 'Membresía Vence', format: (v) => formatDate(v) }
+  ];
+
+  const handleExportPDF = () => {
+    exportToPDF({
+      data: filteredPagos,
+      columns: exportColumns,
+      title: 'Reporte de Pagos y Membresías - BodyHealth',
+      filename: `pagos_${new Date().toISOString().split('T')[0]}.pdf`,
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'left' },
+        2: { halign: 'left' }
+      }
+    });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({
+      data: filteredPagos,
+      columns: exportColumns,
+      title: 'Reporte de Pagos y Membresías - BodyHealth',
+      filename: `pagos_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
+
   /* ─── Render ─────────────────────────────────────────────────────────── */
   return (
     <div>
@@ -242,6 +284,26 @@ const PagosView = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button
+            className="btn-secondary"
+            onClick={handleExportPDF}
+            disabled={filteredPagos.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPagos.length === 0 ? 0.5 : 1 }}
+            title="Exportar a PDF"
+          >
+            <FileText size={15} />
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={handleExportExcel}
+            disabled={filteredPagos.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPagos.length === 0 ? 0.5 : 1 }}
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet size={15} />
+          </button>
         </div>
       </div>
 

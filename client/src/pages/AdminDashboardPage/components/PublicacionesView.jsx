@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, X, Image as ImageIcon, FileText, FileSpreadsheet } from 'lucide-react';
 import { getNoticias, createNoticia, updateNoticia, deleteNoticia } from '../../../services/noticiaService';
 import { AuthContext } from '../../../context/AuthContext';
+import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 const PublicacionesView = () => {
   const { user } = useContext(AuthContext);
@@ -134,6 +135,41 @@ const PublicacionesView = () => {
   const totalActivas = posts.filter(p => p.n_estado === 'ACTIVA' || p.n_estado === 'Publicado').length;
   const totalInactivas = posts.filter(p => p.n_estado === 'INACTIVA' || p.n_estado === 'Borrador').length;
 
+  // ── Columnas para exportación ────────────────────────────────────────────────
+  const exportColumns = [
+    { key: 'n_id', header: 'ID', format: (v) => `#${v}` },
+    { key: 'n_titulo', header: 'Título' },
+    { key: 'n_contenido', header: 'Contenido', format: (v) => v ? v.substring(0, 100) + (v.length > 100 ? '...' : '') : '' },
+    { key: 'autor_nombre', header: 'Autor', format: (v) => v || 'Admin BodyHealth' },
+    { key: 'n_fecha_publicacion', header: 'Fecha Publicación', format: (v) => v ? new Date(v).toLocaleDateString('es-CO') : 'Sin fecha' },
+    { key: 'n_estado', header: 'Estado' },
+    { key: 'n_imagen', header: 'Imagen', format: (v) => v ? 'Sí' : 'No' }
+  ];
+
+  const handleExportPDF = () => {
+    exportToPDF({
+      data: filteredPosts,
+      columns: exportColumns,
+      title: 'Reporte de Publicaciones - BodyHealth',
+      filename: `publicaciones_${new Date().toISOString().split('T')[0]}.pdf`,
+      orientation: 'landscape',
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'left', cellWidth: 50 },
+        2: { halign: 'left', cellWidth: 80 }
+      }
+    });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({
+      data: filteredPosts,
+      columns: exportColumns,
+      title: 'Reporte de Publicaciones - BodyHealth',
+      filename: `publicaciones_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
+
   return (
     <div>
       {/* Title */}
@@ -201,6 +237,26 @@ const PublicacionesView = () => {
             <option value="ACTIVA">Activas (Publicadas)</option>
             <option value="INACTIVA">Inactivas (Ocultas)</option>
           </select>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button
+            className="btn-secondary"
+            onClick={handleExportPDF}
+            disabled={filteredPosts.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPosts.length === 0 ? 0.5 : 1 }}
+            title="Exportar a PDF"
+          >
+            <FileText size={15} />
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={handleExportExcel}
+            disabled={filteredPosts.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredPosts.length === 0 ? 0.5 : 1 }}
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet size={15} />
+          </button>
         </div>
       </div>
 

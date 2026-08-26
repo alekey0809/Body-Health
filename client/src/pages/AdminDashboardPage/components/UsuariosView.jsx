@@ -3,8 +3,10 @@ import {
   UserPlus, Search, Edit, Trash2, X,
   AlertCircle, RefreshCw, Shield, User, Users,
   Mail, Phone, FileText, Key, ToggleLeft, ToggleRight,
+  FileSpreadsheet, FileText as FileTextIcon
 } from 'lucide-react';
 import { getUsuarios, createUsuario, updateUsuarioAdmin, deleteUsuario } from '../../../services/userService';
+import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 // ─── Catálogos ────────────────────────────────────────────────────────────────
 const TIPOS_DOC = [
@@ -86,6 +88,42 @@ const UsuariosView = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // ── Columnas para exportación ────────────────────────────────────────────────
+  const exportColumns = [
+    { key: 'u_nombres', header: 'Nombres' },
+    { key: 'u_apellidos', header: 'Apellidos' },
+    { key: 'u_correo_electronico', header: 'Correo Electrónico' },
+    { key: 'u_numero_documento', header: 'N° Documento' },
+    { key: 'u_td_id', header: 'Tipo Doc.', format: (v) => ({ 1: 'CC', 2: 'CE', 3: 'Pasaporte', 4: 'TI' }[v] || v) },
+    { key: 'u_numero_contacto', header: 'Contacto' },
+    { key: 'u_r_id', header: 'Rol', format: (v) => ({ 1: 'Admin', 2: 'Usuario', 3: 'Entrenador' }[v] || v) },
+    { key: 'u_eg_id', header: 'Estado', format: (v) => (v === 1 ? 'Activo' : 'Inactivo') },
+    { key: 'u_fecha_creacion', header: 'Fecha Registro', format: (v) => v ? new Date(v).toLocaleDateString('es-ES') : '' }
+  ];
+
+  const handleExportPDF = () => {
+    exportToPDF({
+      data: filteredUsers,
+      columns: exportColumns,
+      title: 'Reporte de Usuarios - BodyHealth',
+      filename: `usuarios_${new Date().toISOString().split('T')[0]}.pdf`,
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'left' },
+        2: { halign: 'left' }
+      }
+    });
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel({
+      data: filteredUsers,
+      columns: exportColumns,
+      title: 'Reporte de Usuarios - BodyHealth',
+      filename: `usuarios_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
 
   const showToast = useCallback((message, type = 'success') => setToast({ message, type }), []);
 
@@ -344,6 +382,28 @@ const UsuariosView = () => {
               <option key={r.id} value={r.label}>{r.label} (u_r_id={r.id})</option>
             ))}
           </select>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <button
+            className="btn-secondary"
+            onClick={handleExportPDF}
+            disabled={filteredUsers.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredUsers.length === 0 ? 0.5 : 1 }}
+            title="Exportar a PDF"
+          >
+            <FileTextIcon size={15} />
+            <span style={{ display: 'none' }}>PDF</span>
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={handleExportExcel}
+            disabled={filteredUsers.length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredUsers.length === 0 ? 0.5 : 1 }}
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet size={15} />
+            <span style={{ display: 'none' }}>Excel</span>
+          </button>
         </div>
       </div>
 
