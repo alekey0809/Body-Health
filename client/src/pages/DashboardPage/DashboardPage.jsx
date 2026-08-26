@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock } from 'lucide-react';
+import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { getMembresiasByUsuario } from '../../services/pagoService';
 import './DashboardPage.css';
 
 const dataGrafica = [
@@ -29,6 +30,12 @@ const DashboardPage = () => {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [hasActiveMembership, setHasActiveMembership] = useState(true);
   const [membershipInfo, setMembershipInfo] = useState(null);
+
+  // Estados de Historial de Pagos
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentStats, setPaymentStats] = useState({ total: 0, vigentes: 0, vencidas: 0 });
+  const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(false);
 
   const getUserId = () => user?.id || user?.u_id || user?._id;
 
@@ -70,6 +77,35 @@ const DashboardPage = () => {
     } catch (err) {
       console.warn('Error al cargar datos de asistencia:', err);
     }
+  };
+
+  const fetchPaymentHistory = async () => {
+    const currentUserId = getUserId();
+    if (!currentUserId) return;
+
+    setLoadingPaymentHistory(true);
+    try {
+      const data = await getMembresiasByUsuario(currentUserId);
+      setPaymentHistory(data.membresias || data);
+      setPaymentStats({
+        total: data.total || data.length,
+        vigentes: data.vigentes || data.filter(m => m.es_vigente).length,
+        vencidas: data.vencidas || data.filter(m => !m.es_vigente).length
+      });
+    } catch (err) {
+      console.error('Error al cargar historial de pagos:', err);
+    } finally {
+      setLoadingPaymentHistory(false);
+    }
+  };
+
+  const handleOpenPaymentHistory = () => {
+    setShowPaymentHistory(true);
+    fetchPaymentHistory();
+  };
+
+  const handleClosePaymentHistory = () => {
+    setShowPaymentHistory(false);
   };
 
   const handleLogout = () => {
@@ -304,7 +340,14 @@ const DashboardPage = () => {
                 )}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                <button className="btn-secondary card-btn" style={{ flex: 1 }}>Historial</button>
+                <button 
+                  className="btn-secondary card-btn" 
+                  style={{ flex: 1 }}
+                  onClick={handleOpenPaymentHistory}
+                >
+                  <History size={14} style={{ marginRight: '4px' }} />
+                  Historial
+                </button>
                 <button onClick={() => navigate('/planes')} className="btn-primary card-btn" style={{ flex: 1 }}>Renovar</button>
               </div>
             </div>
@@ -390,8 +433,120 @@ const DashboardPage = () => {
           
         </div>
       </main>
+
+      {/* Modal Historial de Pagos */}
+      {showPaymentHistory && (
+        <div className="payment-history-modal-overlay" onClick={handleClosePaymentHistory}>
+          <div className="payment-history-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="payment-history-modal-header">
+              <h3>
+                <History size={20} />
+                Historial de Compras
+              </h3>
+              <button className="close-modal-btn" onClick={handleClosePaymentHistory} aria-label="Cerrar">
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="payment-history-modal-body">
+              {loadingPaymentHistory ? (
+                <div className="payment-history-loading">Cargando historial...</div>
+              ) : paymentHistory.length === 0 ? (
+                <div className="payment-history-empty">
+                  <CreditCard size={48} />
+                  <p>No has realizado compras aún</p>
+                  <button className="btn-primary" onClick={() => { handleClosePaymentHistory(); navigate('/planes'); }}>
+                    Ver Planes Disponibles
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Stats Summary */}
+                  <div className="payment-history-stats">
+                    <div className="stat-item">
+                      <span className="stat-value">{paymentStats.total}</span>
+                      <span className="stat-label">Total</span>
+                    </div>
+                    <div className="stat-item active">
+                      <span className="stat-value">{paymentStats.vigentes}</span>
+                      <span className="stat-label">Vigentes</span>
+                    </div>
+                    <div className="stat-item expired">
+                      <span className="stat-value">{paymentStats.vencidas}</span>
+                      <span className="stat-label">Vencidas</span>
+                    </div>
+                  </div>
+
+                  <ul className="payment-history-list">
+                    {paymentHistory.map((membresia) => (
+                      <li key={membresia.m_id || membresia.f_id} className="payment-history-item">
+                        <div className="payment-item-main">
+                          <div className="payment-item-info">
+                            <span className="payment-plan-name">{membresia.plan?.pe_nombre || membresia.pe_nombre}</span>
+                            <span className="payment-date">
+                              {new Date(membresia.factura?.f_fecha_hora || membresia.f_fecha_hora).toLocaleDateString('es-CO', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          <span className={`payment-status-badge ${membresia.es_vigente ? 'status-approved' : 'status-cancelled'}`}>
+                            {membresia.es_vigente ? 'Vigente' : 'Vencida'}
+                          </span>
+                        </div>
+                        <div className="payment-item-details">
+                          <span className="payment-amount">
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(membresia.factura?.f_valor_total || membresia.f_valor_total)}
+                          </span>
+                          {membresia.fecha_vencimiento && (
+                            <span className={`payment-expiry ${!membresia.es_vigente ? 'expired' : ''}`}>
+                              {membresia.es_vigente ? 'Vence: ' : 'Venció: '}
+                              {new Date(membresia.fecha_vencimiento).toLocaleDateString('es-CO', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
+                          <span className="payment-status-text">
+                            Pago: {membresia.factura?.estado_pago || membresia.estado_pago || '—'}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+// Helper functions para el estado del pago
+const getPaymentStatusText = (epId) => {
+  const statusMap = {
+    1: 'PENDIENTE',
+    2: 'APROBADO',
+    3: 'RECHAZADO',
+    4: 'EN PROCESO',
+    5: 'ANULADO'
+  };
+  return statusMap[epId] || 'DESCONOCIDO';
+};
+
+const getPaymentStatusClass = (epId) => {
+  const classMap = {
+    1: 'status-pending',
+    2: 'status-approved',
+    3: 'status-rejected',
+    4: 'status-processing',
+    5: 'status-cancelled'
+  };
+  return classMap[epId] || 'status-unknown';
 };
 
 export default DashboardPage;

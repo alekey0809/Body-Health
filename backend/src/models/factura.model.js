@@ -149,5 +149,40 @@ export const FacturaModel = {
         } finally {
             client.release();
         }
+    },
+
+    // Obtener membresías de un usuario (activas y vencidas)
+    getMembresiasByUsuario: async (u_id) => {
+        const query = `
+            SELECT
+                m.m_id,
+                m.m_u_id,
+                m.m_pe_id,
+                m.m_fecha_inicio,
+                m.m_fecha_vencimiento,
+                m.m_eg_id,
+                eg.eg_nombre AS estado_membresia,
+                pe.pe_id,
+                pe.pe_nombre,
+                pe.pe_precio_base,
+                f.f_id,
+                f.f_valor_total,
+                f.f_fecha_hora,
+                f.f_ep_id,
+                ep.ep_nombre AS estado_pago,
+                CASE 
+                    WHEN m.m_fecha_vencimiento >= CURRENT_DATE THEN true
+                    ELSE false
+                END AS es_vigente
+            FROM membresia m
+            JOIN plan_entrenamiento pe ON m.m_pe_id = pe.pe_id
+            JOIN factura f ON m.f_id = f.f_id
+            LEFT JOIN estado_general eg ON m.m_eg_id = eg.eg_id
+            LEFT JOIN estado_pago ep ON f.f_ep_id = ep.ep_id
+            WHERE m.m_u_id = $1
+            ORDER BY m.m_fecha_inicio DESC
+        `;
+        const { rows } = await pool.query(query, [u_id]);
+        return rows;
     }
 };

@@ -123,3 +123,49 @@ export const updateEstadoPago = async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Error al actualizar estado' });
     }
 };
+
+// GET /api/pagos/usuario/:u_id  → historial de membresías del usuario
+export const getMembresiasByUsuario = async (req, res) => {
+    const { u_id } = req.params;
+
+    if (!u_id || u_id.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'u_id es requerido' });
+    }
+
+    try {
+        const membresias = await FacturaModel.getMembresiasByUsuario(u_id);
+        
+        const vigentes = membresias.filter(m => m.es_vigente);
+        const vencidas = membresias.filter(m => !m.es_vigente);
+
+        return res.json({
+            ok: true,
+            total: membresias.length,
+            vigentes: vigentes.length,
+            vencidas: vencidas.length,
+            membresias: membresias.map(m => ({
+                m_id: m.m_id,
+                plan: {
+                    pe_id: m.pe_id,
+                    pe_nombre: m.pe_nombre,
+                    pe_precio_base: m.pe_precio_base
+                },
+                factura: {
+                    f_id: m.f_id,
+                    f_valor_total: m.f_valor_total,
+                    f_fecha_hora: m.f_fecha_hora,
+                    estado_pago: m.estado_pago,
+                    f_ep_id: m.f_ep_id
+                },
+                fecha_inicio: m.m_fecha_inicio,
+                fecha_vencimiento: m.m_fecha_vencimiento,
+                estado_membresia: m.estado_membresia,
+                m_eg_id: m.m_eg_id,
+                es_vigente: m.es_vigente
+            }))
+        });
+    } catch (error) {
+        console.error('Error al obtener membresías del usuario:', error.message);
+        return res.status(500).json({ ok: false, message: 'Error al obtener membresías' });
+    }
+};
