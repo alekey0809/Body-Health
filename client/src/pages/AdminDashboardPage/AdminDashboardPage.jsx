@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X, LayoutDashboard, ExternalLink } from 'lucide-react';
+import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X, LayoutDashboard, ExternalLink, Calendar } from 'lucide-react';
 import './AdminDashboardPage.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,6 +10,7 @@ import PlanesView from './components/PlanesView';
 import PagosView from './components/PagosView';
 import UsuariosView from './components/UsuariosView';
 import PublicacionesView from './components/PublicacionesView';
+import RutinasView from './components/RutinasView';
   
 const AdminDashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
@@ -95,6 +96,15 @@ const AdminDashboardPage = () => {
             >
               <FileText size={20} />
               <span className="nav-item-text">Publicaciones</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('rutinas')}
+              className={`nav-item ${activeTab === 'rutinas' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <Calendar size={20} />
+              <span className="nav-item-text">Rutinas PDF</span>
             </button>
           </nav>
 
@@ -199,6 +209,14 @@ const AdminDashboardPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('rutinas'); setIsMobileMenuOpen(false); }}
+                className={`admin-mobile-nav-link ${activeTab === 'rutinas' ? 'active' : ''}`}
+              >
+                <Calendar size={20} />
+                <span>Rutinas PDF</span>
+              </button>
+
+              <button
                 onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
                 className="admin-mobile-nav-link"
                 style={{ color: '#0284c7' }}
@@ -234,6 +252,7 @@ const AdminDashboardPage = () => {
           {activeTab === 'pagos' && <PagosView />}
           {activeTab === 'usuarios' && <UsuariosView />}
           {activeTab === 'publicaciones' && <PublicacionesView />}
+          {activeTab === 'rutinas' && <RutinasView />}
         </div>
       </main>
     </div>

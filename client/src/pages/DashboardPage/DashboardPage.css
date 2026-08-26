@@ -820,3 +820,77 @@
     align-self: flex-start;
   }
 }
+
+/* Rutina PDF Card */
+.rutina-card-content {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.rutina-day-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface-container-low);
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-container-high);
+}
+
+.rutina-day-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--on-surface-variant);
+  font-weight: 700;
+}
+
+.rutina-day-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Noto Serif', serif;
+}
+
+.rutina-loading {
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+  padding: 1rem;
+}
+
+.rutina-available {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rutina-unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rutina-message {
+  font-size: 0.875rem;
+  color: var(--on-surface);
+  margin: 0;
+}
+
+.rutina-hint {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  margin: 0;
+}
+
+.rutina-open-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}

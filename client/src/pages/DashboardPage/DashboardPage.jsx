@@ -1,11 +1,13 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle } from 'lucide-react';
+import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { getMembresiasByUsuario } from '../../services/pagoService';
 import './DashboardPage.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const dataGrafica = [
   { name: 'Lun', calorias: 400 },
@@ -36,6 +38,40 @@ const DashboardPage = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [paymentStats, setPaymentStats] = useState({ total: 0, vigentes: 0, vencidas: 0 });
   const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(false);
+
+  // Estados de Rutina PDF
+  const [rutinaPdfExists, setRutinaPdfExists] = useState(false);
+  const [rutinaLoading, setRutinaLoading] = useState(true);
+  const [currentDay, setCurrentDay] = useState(() => new Date().getDay() || 7); // 1=Lunes, 7=Domingo
+
+  useEffect(() => {
+    checkRutinaPdf();
+  }, [currentDay]);
+
+  const checkRutinaPdf = async () => {
+    setRutinaLoading(true);
+    try {
+      const res = await api.get(`/api/rutinas/status/all`);
+      if (res.data.ok) {
+        const dayData = res.data.days.find(d => d.day === currentDay);
+        setRutinaPdfExists(dayData?.exists || false);
+      }
+    } catch (err) {
+      console.warn('Error al verificar rutina PDF:', err);
+      setRutinaPdfExists(false);
+    } finally {
+      setRutinaLoading(false);
+    }
+  };
+
+  const openRutinaPdf = () => {
+    window.open(`${BACKEND_URL}/api/rutinas/${currentDay}`, '_blank');
+  };
+
+  const getDayName = (day) => {
+    const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    return names[day] || '';
+  };
 
   const getUserId = () => user?.id || user?.u_id || user?._id;
 
@@ -200,6 +236,7 @@ const DashboardPage = () => {
           <h1 className="topbar-logo-text">BODYHEALT</h1>
         </div>
         <div className="topbar-right">
+          <Link to="/main" className="btn-secondary small-btn desktop-only">Ir al Landing</Link>
           <Link to="/planes" className="btn-secondary small-btn desktop-only">Ver Planes</Link>
           <button onClick={handleLogout} className="logout-text-btn desktop-only">Salir</button>
           
@@ -218,6 +255,14 @@ const DashboardPage = () => {
       {isMobileMenuOpen && (
         <div className="user-mobile-drawer">
           <nav className="user-mobile-nav">
+            <button 
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/main'); }} 
+              className="user-mobile-nav-link"
+            >
+              <Activity size={20} />
+              <span>Ir al Landing</span>
+            </button>
+
             <button 
               onClick={() => handleMobileLinkClick('pagos')} 
               className="user-mobile-nav-link"
@@ -428,10 +473,43 @@ const DashboardPage = () => {
                   })}
                 </ul>
               )}
-            </div>
-          </div>
-          
-        </div>
+</div>
+           </div>
+           
+           {/* 5. Rutina del Día (PDF) */}
+           <div className="dash-card" id="rutina">
+             <div className="card-header">
+               <FileText className="card-icon" /> 
+               <h3>Rutina de Hoy</h3>
+             </div>
+             <div className="card-body">
+               <div className="rutina-card-content">
+                 <div className="rutina-day-info">
+                   <span className="rutina-day-label">Día actual:</span>
+                   <span className="rutina-day-name">{getDayName(currentDay)}</span>
+                 </div>
+                 {rutinaLoading ? (
+                   <div className="rutina-loading">Verificando rutina...</div>
+                 ) : rutinaPdfExists ? (
+                   <div className="rutina-available">
+                     <p className="rutina-message">Hay una rutina disponible para hoy</p>
+                     <button className="btn-primary card-btn rutina-open-btn" onClick={openRutinaPdf}>
+                       <FileText size={16} style={{ marginRight: '6px' }} />
+                       Abrir PDF en nueva pestaña
+                       <ExternalLink size={14} style={{ marginLeft: '6px' }} />
+                     </button>
+                   </div>
+                 ) : (
+                   <div className="rutina-unavailable">
+                     <p className="rutina-message">No hay rutina subida para hoy</p>
+                     <p className="rutina-hint">El administrador debe subir el PDF correspondiente</p>
+                   </div>
+                 )}
+               </div>
+             </div>
+           </div>
+           
+         </div>
       </main>
 
       {/* Modal Historial de Pagos */}
