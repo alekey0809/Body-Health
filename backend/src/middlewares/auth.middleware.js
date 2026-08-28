@@ -1,0 +1,48 @@
+import jwt from 'jsonwebtoken';
+
+// Middleware para verificar que la petición contenga un JWT válido
+export const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Acceso no autorizado. Se requiere un token de autenticación válido.'
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secreto_super_seguro_development');
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Token de autenticación inválido o expirado.',
+      error: error.message
+    });
+  }
+};
+
+// Middleware para verificar que el usuario autenticado sea Administrador (u_r_id === 1 o rol === 1)
+export const verifyAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Usuario no autenticado.'
+    });
+  }
+
+  const userRole = Number(req.user.rol ?? req.user.u_r_id);
+
+  if (userRole !== 1) {
+    return res.status(403).json({
+      ok: false,
+      message: 'Acceso denegado. Esta operación está reservada exclusivamente para Administradores del sistema.'
+    });
+  }
+
+  next();
+};

@@ -11,6 +11,7 @@ import asistenciaRoutes from './routes/asistencia.routes.js';
 import noticiaRoutes from './routes/noticia.routes.js';
 import rutinaRoutes from './routes/rutina.routes.js';
 import historialSueldoRoutes from './routes/historialSueldo.routes.js';
+import backupRoutes from './routes/backup.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,8 @@ app.use('/api/asistencia', asistenciaRoutes);
 app.use('/api/noticias', noticiaRoutes);
 // Rutas de Rutinas PDF
 app.use('/api/rutinas', rutinaRoutes);
+// Rutas de Respaldo / Backup
+app.use('/api/backup', backupRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
