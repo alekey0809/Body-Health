@@ -19,6 +19,14 @@ const formatDate = (str) => {
   return String(str).split('T')[0];
 };
 
+const isMembershipActive = (pago) => {
+  if (!pago || !pago.m_fecha_vencimiento) return false;
+  if (pago.es_vigente !== undefined) return pago.es_vigente;
+  const expiryDate = new Date(pago.m_fecha_vencimiento);
+  expiryDate.setHours(23, 59, 59, 999);
+  return expiryDate >= new Date();
+};
+
 /* ─── Component ───────────────────────────────────────────────────────────── */
 const PagosView = () => {
   const [pagos, setPagos]               = useState([]);
@@ -266,7 +274,7 @@ const PagosView = () => {
               Membresías Activas
             </span>
             <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              {pagos.filter(p => p.m_fecha_vencimiento && new Date(p.m_fecha_vencimiento) >= new Date()).length}
+              {pagos.filter(p => isMembershipActive(p)).length}
             </span>
           </div>
           <span className="badge badge-warning">Vigentes</span>
@@ -329,7 +337,7 @@ const PagosView = () => {
               ) : filteredPagos.length === 0 ? (
                 <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>No se encontraron registros.</td></tr>
               ) : filteredPagos.map((p) => {
-                const vigente = p.m_fecha_vencimiento && new Date(p.m_fecha_vencimiento) >= new Date();
+                const vigente = isMembershipActive(p);
                 const currentEstado = estadosPago.find(e => e.ep_id === p.f_ep_id) || { nombre: 'DESCONOCIDO', color: '#78716c' };
                 return (
                   <tr key={p.f_id}>

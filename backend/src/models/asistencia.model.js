@@ -70,6 +70,24 @@ export const AsistenciaModel = {
     return rows.length > 0 ? rows[0] : null;
   },
 
+  // Obtener la última membresía registrada del usuario (sea activa o vencida)
+  getLatestMembership: async (userId) => {
+    const query = `
+      SELECT m.m_id, m.m_fecha_inicio, m.m_fecha_vencimiento, m.m_eg_id, pe.pe_nombre,
+             CASE 
+               WHEN m.m_fecha_vencimiento >= CURRENT_DATE AND m.m_eg_id = 9 THEN true 
+               ELSE false 
+             END AS es_vigente
+      FROM membresia m
+      JOIN plan_entrenamiento pe ON m.m_pe_id = pe.pe_id
+      WHERE m.m_u_id = $1::uuid
+      ORDER BY m.m_fecha_vencimiento DESC, m.m_id DESC
+      LIMIT 1;
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows.length > 0 ? rows[0] : null;
+  },
+
   // Verificar si el usuario ya registró asistencia el día de hoy
   hasAttendedToday: async (userId) => {
     const query = `

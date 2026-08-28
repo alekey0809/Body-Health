@@ -171,7 +171,7 @@ export const FacturaModel = {
                 f.f_ep_id,
                 ep.ep_nombre AS estado_pago,
                 CASE 
-                    WHEN m.m_fecha_vencimiento >= CURRENT_DATE THEN true
+                    WHEN m.m_fecha_vencimiento >= CURRENT_DATE AND m.m_eg_id = 9 THEN true
                     ELSE false
                 END AS es_vigente
             FROM membresia m

@@ -12,6 +12,8 @@ import { AuthContext } from "../context/AuthContext";
 
 import PlansCatalogPage from "../pages/PlansCatalogPage/PlansCatalogPage";
 import EditProfilePage from "../pages/EditProfilePage/EditProfilePage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage/ResetPasswordPage";
 
 // Componente para proteger rutas privadas generales (ej. Dashboard)
 const PrivateRoute = ({ children }) => {
@@ -47,6 +49,8 @@ const AppRouter = () => {
         {/* Rutas Públicas (Solo no logueados) */}
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+        <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
         
         {/* Rutas de Flujo de Compra (Públicas y Privadas) */}
         <Route path="/checkout" element={<CheckoutPage />} />

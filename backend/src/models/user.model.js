@@ -107,5 +107,17 @@ export const UserModel = {
         `;
         const { rows } = await pool.query(query, [userId]);
         return rows[0];
+    },
+
+    // Actualizar contraseña del usuario
+    updatePassword: async (userId, newHashPassword) => {
+        const query = `
+            UPDATE usuario
+            SET u_contrasena = $1
+            WHERE u_id = $2
+            RETURNING u_id, u_correo_electronico
+        `;
+        const { rows } = await pool.query(query, [newHashPassword, userId]);
+        return rows[0];
     }
 };

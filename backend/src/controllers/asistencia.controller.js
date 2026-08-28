@@ -71,12 +71,13 @@ export const checkMembershipStatus = async (req, res) => {
     }
 
     console.log('🔍 checkMembershipStatus called for userId:', userId);
-    const membership = await AsistenciaModel.hasActiveMembership(userId);
-    console.log('🔍 Membership result:', membership);
+    const activeMembership = await AsistenciaModel.hasActiveMembership(userId);
+    const latestMembership = await AsistenciaModel.getLatestMembership(userId);
+    console.log('🔍 Membership result:', { activeMembership, latestMembership });
     return res.status(200).json({
       ok: true,
-      hasActiveMembership: !!membership,
-      membership: membership || null
+      hasActiveMembership: !!activeMembership,
+      membership: latestMembership || null
     });
   } catch (error) {
     console.error('Error al consultar membresía:', error);

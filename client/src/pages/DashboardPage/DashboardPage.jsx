@@ -368,7 +368,10 @@ const DashboardPage = () => {
                   <>
                     <div>
                       <p className="payment-plan">{membershipInfo.pe_nombre}</p>
-                      <p className="payment-date">Vence: {new Date(membershipInfo.m_fecha_vencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                      <p className="payment-date">
+                        {hasActiveMembership ? 'Vence: ' : 'Venció: '}
+                        {new Date(membershipInfo.m_fecha_vencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
                     </div>
                     <span className={`status-badge ${hasActiveMembership ? 'status-badge-green' : 'status-badge-red'}`}>
                       {hasActiveMembership ? 'Al día' : 'Vencida'}
@@ -377,10 +380,10 @@ const DashboardPage = () => {
                 ) : (
                   <>
                     <div>
-                      <p className="payment-plan">Membresía Trimestral</p>
-                      <p className="payment-date">Vence: 15/Ago/2026</p>
+                      <p className="payment-plan">Sin Membresía Activa</p>
+                      <p className="payment-date">No registra pagos</p>
                     </div>
-                    <span className="status-badge-green">Al día</span>
+                    <span className="status-badge status-badge-red">Sin Membresía</span>
                   </>
                 )}
               </div>

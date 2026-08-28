@@ -45,6 +45,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error en login:', error);
+      if (!error.response) {
+        throw 'No se pudo conectar con el servidor backend (ERR_CONNECTION_REFUSED). Asegúrate de que el servidor Backend esté ejecutándose en http://localhost:3000.';
+      }
       throw error.response?.data?.message || 'Error al iniciar sesión';
     }
   };
@@ -58,6 +61,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error en registro:', error);
+      if (!error.response) {
+        throw 'No se pudo conectar con el servidor backend (ERR_CONNECTION_REFUSED). Asegúrate de que el servidor Backend esté ejecutándose en http://localhost:3000.';
+      }
       throw error.response?.data?.message || 'Error al registrar';
     }
   };

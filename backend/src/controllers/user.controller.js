@@ -1,6 +1,7 @@
 import { UserModel } from '../models/user.model.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { sendPasswordResetEmail } from '../config/mailer.js';
 
 // Helper de validación de backend
 const validateUserData = ({ nombres, apellidos, correo, contrasena, idTipoDoc, numeroDoc, contacto }, isNew = true) => {
@@ -218,4 +219,127 @@ export const deleteUser = async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar usuario:', error.message);
         return res.status(500).json({ ok: false, message: "Error al eliminar usuario", error: error.message });
-    }};
+    }
+};
+
+// CONTROLADOR DE SOLICITUD DE RECUPERACIÓN DE CONTRASEÑA
+export const forgotPassword = async (req, res) => {
+    const { correo } = req.body;
+    try {
+        if (!correo || typeof correo !== 'string') {
+            return res.status(400).json({ ok: false, message: "El correo electrónico es requerido." });
+        }
+
+        const emailClean = correo.trim().toLowerCase();
+        const user = await UserModel.findByEmail(emailClean);
+
+        // Por seguridad, respondemos siempre con éxito aunque el usuario no exista
+        if (!user) {
+            return res.status(200).json({
+                ok: true,
+                message: "Si el correo electrónico está registrado en BodyHealth, recibirás instrucciones para restablecer tu contraseña."
+            });
+        }
+
+        if (user.u_eg_id !== 1) {
+            return res.status(403).json({ ok: false, message: "La cuenta de usuario se encuentra inactiva. Contacta con administración." });
+        }
+
+        // Generar un token JWT firmado de un solo uso con el hash de contraseña actual
+        const secret = (process.env.JWT_SECRET || 'secreto_super_seguro_development') + user.u_contrasena;
+        const tokenPayload = {
+            id: user.u_id,
+            correo: user.u_correo_electronico,
+            purpose: 'reset-password'
+        };
+        const resetToken = jwt.sign(tokenPayload, secret, { expiresIn: '15m' });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+        await sendPasswordResetEmail({
+            toEmail: user.u_correo_electronico,
+            userName: `${user.u_nombres} ${user.u_apellidos}`,
+            resetUrl
+        });
+
+        return res.status(200).json({
+            ok: true,
+            message: "Si el correo electrónico está registrado en BodyHealth, recibirás instrucciones para restablecer tu contraseña."
+        });
+
+    } catch (error) {
+        console.error('Error en forgotPassword:', error);
+        return res.status(500).json({ ok: false, message: "Error al procesar la solicitud de recuperación de contraseña." });
+    }
+};
+
+// CONTROLADOR DE RESTABLECIMIENTO DE CONTRASEÑA
+export const resetPassword = async (req, res) => {
+    const { token, contrasena } = req.body;
+
+    try {
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ ok: false, message: "El token de recuperación es requerido." });
+        }
+
+        if (!contrasena || typeof contrasena !== 'string') {
+            return res.status(400).json({ ok: false, message: "La nueva contraseña es requerida." });
+        }
+
+        // Validar reglas de contraseña segura
+        const strPass = String(contrasena);
+        const hasMinLength = strPass.length >= 8;
+        const hasUpper = /[A-Z]/.test(strPass);
+        const hasLower = /[a-z]/.test(strPass);
+        const hasNumber = /[0-9]/.test(strPass);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(strPass);
+        if (!hasMinLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+            return res.status(400).json({
+                ok: false,
+                message: "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial."
+            });
+        }
+
+        // Decodificar payload sin verificar firma para obtener id de usuario
+        const decodedUnverified = jwt.decode(token);
+        if (!decodedUnverified || !decodedUnverified.id || decodedUnverified.purpose !== 'reset-password') {
+            return res.status(400).json({ ok: false, message: "El enlace de recuperación no es válido o ha expirado." });
+        }
+
+        // Obtener usuario actual
+        const user = await UserModel.getById(decodedUnverified.id);
+        if (!user) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado." });
+        }
+
+        // Para verificar la firma necesitamos traer u_contrasena actual
+        const userFull = await UserModel.findByEmail(user.u_correo_electronico);
+        if (!userFull) {
+            return res.status(404).json({ ok: false, message: "Usuario no encontrado." });
+        }
+
+        // Verificar JWT con el secreto vinculado a la contraseña actual
+        const secret = (process.env.JWT_SECRET || 'secreto_super_seguro_development') + userFull.u_contrasena;
+        try {
+            jwt.verify(token, secret);
+        } catch (jwtErr) {
+            return res.status(400).json({ ok: false, message: "El enlace de recuperación no es válido o ha expirado (ya fue utilizado o pasaron 15 minutos)." });
+        }
+
+        // Generar hash SHA-256 de la nueva contraseña
+        const newHash = crypto.createHash('sha256').update(contrasena).digest('hex');
+
+        // Guardar nueva contraseña en la base de datos
+        await UserModel.updatePassword(user.u_id, newHash);
+
+        return res.status(200).json({
+            ok: true,
+            message: "¡Tu contraseña ha sido restablecida con éxito! Ya puedes iniciar sesión con tu nueva contraseña."
+        });
+
+    } catch (error) {
+        console.error('Error en resetPassword:', error);
+        return res.status(500).json({ ok: false, message: "Error al restablecer la contraseña." });
+    }
+};

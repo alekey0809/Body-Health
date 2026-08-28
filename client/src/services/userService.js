@@ -81,3 +81,20 @@ export const deleteUsuario = async (id) => {
   const response = await api.delete(`/api/users/${id}`);
   return response.data;
 };
+
+/**
+ * Solicita el envío de un correo de recuperación de contraseña.
+ */
+export const requestPasswordReset = async (correo) => {
+  const response = await api.post('/api/users/forgot-password', { correo });
+  return response.data;
+};
+
+/**
+ * Restablece la contraseña del usuario mediante el token recibido en el correo.
+ */
+export const resetPassword = async (token, contrasena) => {
+  const response = await api.post('/api/users/reset-password', { token, contrasena });
+  return response.data;
+};
+

@@ -121,7 +121,7 @@ const LoginPage = () => {
                 <span>Recordarme</span>
               </label>
               
-              <a href="#" className="forgot-password">¿Olvidaste tu contraseña?</a>
+              <Link to="/forgot-password" className="forgot-password">¿Olvidaste tu contraseña?</Link>
             </div>
 
             <button type="submit" disabled={loading} className="submit-btn">
