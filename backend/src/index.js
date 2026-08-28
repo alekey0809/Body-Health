@@ -12,6 +12,7 @@ import noticiaRoutes from './routes/noticia.routes.js';
 import rutinaRoutes from './routes/rutina.routes.js';
 import historialSueldoRoutes from './routes/historialSueldo.routes.js';
 import backupRoutes from './routes/backup.routes.js';
+import valoracionFisicaRoutes from './routes/valoracionFisica.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,8 @@ app.use('/api/noticias', noticiaRoutes);
 app.use('/api/rutinas', rutinaRoutes);
 // Rutas de Respaldo / Backup
 app.use('/api/backup', backupRoutes);
+// Rutas de Valoración Física
+app.use('/api/valoracion-fisica', valoracionFisicaRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
