@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ArrowLeft, Dumbbell, CreditCard, Landmark, Lock, ShieldCheck } from 'lucide-react';
 import { getPlanById } from '../../services/planService';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter/PasswordStrengthMeter';
+import { validateUserRegistration, sanitizeDocumentInput } from '../../utils/validationUtils';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
@@ -13,6 +15,7 @@ const CheckoutPage = () => {
 
   const [plan, setPlan] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -42,23 +45,49 @@ const CheckoutPage = () => {
   const planPrecio = parseFloat(plan?.pe_precio_base || 0).toLocaleString('es-CO');
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'numeroDoc') {
+      const sanitized = sanitizeDocumentInput(formData.idTipoDoc, value);
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+    } else if (name === 'idTipoDoc') {
+      const newTipoDoc = parseInt(value, 10);
+      setFormData((prev) => ({
+        ...prev,
+        idTipoDoc: newTipoDoc,
+        numeroDoc: sanitizeDocumentInput(newTipoDoc, prev.numeroDoc)
+      }));
+    } else if (name === 'contacto') {
+      const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
+      setFormData((prev) => ({ ...prev, contacto: onlyDigits }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleCheckout = async (e) => {
     e.preventDefault();
+    setError('');
+
+    // Si el usuario no está logueado, validamos los datos de registro
+    if (!user) {
+      const validationError = validateUserRegistration(formData);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      if (!window.confirm('No has iniciado sesión. ¿Deseas crear una cuenta con estos datos para completar el pago?')) {
+        return;
+      }
+    }
+
     setLoading(true);
     
     try {
-      // Si el usuario no está logueado, solicitamos confirmación antes de registrar
       if (!user) {
-        if (!window.confirm('No has iniciado sesión. ¿Deseas crear una cuenta para completar el pago?')) {
-          setLoading(false);
-          return;
-        }
         await register({
           ...formData,
-          idRol: 1,
+          idRol: 2, // Cliente
           idEstadoGen: 1
         });
       }
@@ -69,8 +98,8 @@ const CheckoutPage = () => {
         navigate('/payment-confirmation');
       }, 1500);
 
-    } catch (error) {
-      alert("Error al procesar: " + error);
+    } catch (err) {
+      setError(typeof err === 'string' ? err : 'Error al procesar el pago');
       setLoading(false);
     }
   };
@@ -95,6 +124,22 @@ const CheckoutPage = () => {
             <span>Bodyhealt Premium</span>
           </div>
         </div>
+
+        {error && (
+          <div style={{
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#dc2626',
+            padding: '0.875rem 1rem',
+            borderRadius: '0.5rem',
+            margin: '1rem auto',
+            maxWidth: '80rem',
+            fontWeight: '600',
+            fontSize: '0.875rem'
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
 
         <form onSubmit={handleCheckout}>
           <div className="checkout-grid">
@@ -123,7 +168,7 @@ const CheckoutPage = () => {
                   </div>
                   <div className="form-group">
                     <label>Teléfono</label>
-                    <input type="tel" name="contacto" value={formData.contacto} onChange={handleChange} required />
+                    <input type="tel" name="contacto" value={formData.contacto} onChange={handleChange} placeholder="Ej. 3000000000" maxLength={10} required />
                   </div>
                 </div>
 
@@ -131,23 +176,36 @@ const CheckoutPage = () => {
                   <div className="form-group">
                     <label>Tipo Documento</label>
                     <select name="idTipoDoc" value={formData.idTipoDoc} onChange={handleChange}>
-                      <option value="1">Cédula de Ciudadanía</option>
-                      <option value="2">Cédula de Extranjería</option>
+                      <option value="1">Cédula de Ciudadanía (10 dígitos)</option>
+                      <option value="2">Cédula de Extranjería (6 ó 7 dígitos)</option>
                       <option value="3">Pasaporte</option>
+                      <option value="4">Tarjeta de Identidad (10 dígitos)</option>
                     </select>
                   </div>
                   <div className="form-group">
                     <label>Número Documento</label>
-                    <input type="text" name="numeroDoc" value={formData.numeroDoc} onChange={handleChange} required />
+                    <input 
+                      type="text" 
+                      name="numeroDoc" 
+                      value={formData.numeroDoc} 
+                      onChange={handleChange} 
+                      placeholder={
+                        Number(formData.idTipoDoc) === 1 ? "Ej. 1020304050" :
+                        Number(formData.idTipoDoc) === 2 ? "Ej. 123456" :
+                        Number(formData.idTipoDoc) === 4 ? "Ej. 1098765432" : "Ej. AB123456"
+                      }
+                      required 
+                    />
                   </div>
                 </div>
 
                 {/* Pedir contraseña solo si es usuario nuevo para crearle cuenta */}
                 {!user && (
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                       <label>Crear Contraseña para tu cuenta</label>
                       <input type="password" name="contrasena" value={formData.contrasena} onChange={handleChange} required placeholder="••••••••" />
+                      <PasswordStrengthMeter password={formData.contrasena} />
                     </div>
                   </div>
                 )}
@@ -195,3 +253,4 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+

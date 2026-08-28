@@ -10,6 +10,16 @@ export const getEntrenadores = async (req, res) => {
     }
 };
 
+export const getAvailableUsersForTrainer = async (req, res) => {
+    try {
+        const users = await EntrenadorModel.getAvailableUsersForTrainer();
+        return res.json(users);
+    } catch (error) {
+        console.error('Error al obtener usuarios disponibles para entrenador:', error.message);
+        return res.status(500).json({ message: 'Error al obtener usuarios disponibles', error: error.message });
+    }
+};
+
 export const getEntrenadorById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -64,5 +74,15 @@ export const deleteEntrenador = async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar entrenador:', error.message);
         return res.status(500).json({ message: 'Error al eliminar entrenador', error: error.message });
+    }
+};
+
+export const getSalarioHistorial = async (req, res) => {
+    try {
+        const historial = await EntrenadorModel.getSalarioHistorial();
+        return res.json(historial);
+    } catch (error) {
+        console.error('Error al obtener historial de sueldos:', error.message);
+        return res.status(500).json({ message: 'Error al obtener historial de sueldos', error: error.message });
     }
 };

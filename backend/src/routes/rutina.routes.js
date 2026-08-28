@@ -37,6 +37,7 @@ const upload = multer({
 
 router.post("/upload/:day", upload.single("pdf"), (req, res) => {
   const day = parseInt(req.params.day);
+    console.log('Upload request:', { day, file: req.file ? { name: req.file.originalname, size: req.file.size, mimetype: req.file.mimetype } : null });
   if (isNaN(day) || day < 1 || day > 7) {
     return res.status(400).json({ ok: false, error: "Día inválido (1-7)" });
   }
@@ -44,6 +45,18 @@ router.post("/upload/:day", upload.single("pdf"), (req, res) => {
     return res.status(400).json({ ok: false, error: "No se subió ningún archivo" });
   }
   res.json({ ok: true, message: `PDF del día ${day} subido correctamente`, file: req.file.filename });
+}, (err, req, res, next) => {
+  console.error('Multer error:', err);
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ ok: false, error: "El archivo supera los 10MB" });
+    }
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+  if (err) {
+    return res.status(400).json({ ok: false, error: err.message });
+  }
+  next();
 });
 
 router.get("/:day", (req, res) => {

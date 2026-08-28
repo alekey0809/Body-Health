@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash, FileText, FileSpreadsheet } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash, FileText, FileSpreadsheet, Eye, Calculator, ArrowUpRight, ArrowDownRight, CreditCard, Receipt } from 'lucide-react';
 import {
   getEntrenadores,
+  getUsuariosDisponiblesParaEntrenador,
   createEntrenador,
   updateEntrenador,
   deleteEntrenador,
+  getSalarioHistorial,
 } from '../../../services/entrenadorService';
 import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
@@ -64,7 +66,10 @@ const Toast = ({ message, type, onClose }) => {
 // ─── Componente principal ─────────────────────────────────────────────────────
 const EntrenadoresView = () => {
   const [trainers, setTrainers] = useState([]);
+  const [salaryHistory, setSalaryHistory] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -74,6 +79,7 @@ const EntrenadoresView = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [toast, setToast] = useState(null);
+  const [viewMode, setViewMode] = useState('trainers');
 
   // ── Columnas para exportación ────────────────────────────────────────────────
   const exportColumns = [
@@ -129,12 +135,26 @@ const EntrenadoresView = () => {
     }
   }, []);
 
+  // ── Cargar historial de sueldos ──────────────────────────────────────────
+  const fetchSalarioHistorial = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getSalarioHistorial();
+      setSalaryHistory(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar historial de sueldos:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchEntrenadores();
-  }, [fetchEntrenadores]);
+    fetchSalarioHistorial();
+  }, [fetchEntrenadores, fetchSalarioHistorial]);
 
   // ── Abrir modal (crear o editar) ──────────────────────────────────────────
-  const handleOpenModal = (trainer = null) => {
+  const handleOpenModal = async (trainer = null) => {
     setFormError('');
     if (trainer) {
       setEditingTrainer(trainer);
@@ -146,6 +166,14 @@ const EntrenadoresView = () => {
     } else {
       setEditingTrainer(null);
       setFormData(EMPTY_FORM);
+      // Cargar usuarios disponibles con rol 3 que no son entrenadores aún
+      try {
+        const users = await getUsuariosDisponiblesParaEntrenador();
+        setAvailableUsers(Array.isArray(users) ? users : []);
+      } catch (err) {
+        console.error('Error al cargar usuarios disponibles:', err);
+        setAvailableUsers([]);
+      }
     }
     setShowModal(true);
   };
@@ -160,17 +188,9 @@ const EntrenadoresView = () => {
 
   // ── Validar formulario ────────────────────────────────────────────────────
   const validateForm = () => {
-    if (!editingTrainer && !formData.en_u_id.trim()) {
-      setFormError('El UUID del usuario es obligatorio.');
+    if (!editingTrainer && !formData.en_u_id) {
+      setFormError('Debe seleccionar un usuario para registrar como entrenador.');
       return false;
-    }
-    if (!editingTrainer) {
-      // Validar formato UUID básico
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(formData.en_u_id.trim())) {
-        setFormError('El UUID ingresado no tiene un formato válido (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).');
-        return false;
-      }
     }
     if (!formData.en_sueldo_base || Number(formData.en_sueldo_base) <= 0) {
       setFormError('El sueldo base debe ser un valor mayor a 0.');
@@ -204,14 +224,14 @@ const EntrenadoresView = () => {
         showToast('Entrenador actualizado correctamente.', 'success');
       } else {
         // Crear nuevo entrenador
-        const created = await createEntrenador({ en_u_id: formData.en_u_id.trim(), ...payload });
+        const created = await createEntrenador({ en_u_id: formData.en_u_id, ...payload });
         setTrainers((prev) => [created, ...prev]);
         showToast('Entrenador registrado correctamente.', 'success');
       }
       handleCloseModal();
     } catch (err) {
       console.error('Error al guardar entrenador:', err);
-      const msg = err?.response?.data?.message || 'Error al guardar. Verifica que el UUID exista en la tabla usuario.';
+      const msg = err?.response?.data?.message || 'Error al guardar. Verifica que el usuario exista y no esté ya registrado como entrenador.';
       setFormError(msg);
     } finally {
       setSaving(false);
@@ -235,6 +255,17 @@ const EntrenadoresView = () => {
     }
   };
 
+  // ── Ver detalle de pagos ───────────────────────────────────────────────────
+  const [paymentDetail, setPaymentDetail] = useState(null);
+
+  const showPaymentDetail = (trainer) => {
+    setPaymentDetail(trainer);
+  };
+
+  const handleClosePaymentDetail = () => {
+    setPaymentDetail(null);
+  };
+
   // ── Filtrar entrenadores ──────────────────────────────────────────────────
   const filteredTrainers = trainers.filter((t) => {
     const fullName = `${t.u_nombres || ''} ${t.u_apellidos || ''}`.toLowerCase();
@@ -243,6 +274,48 @@ const EntrenadoresView = () => {
     const term = searchTerm.toLowerCase();
     return fullName.includes(term) || horario.includes(term) || uuid.includes(term);
   });
+
+  // ── Filtrar historial de sueldos ──────────────────────────────────────────
+  const filteredSalaryHistory = salaryHistory.filter((t) => {
+    const fullName = `${t.u_nombres || ''} ${t.u_apellidos || ''}`.toLowerCase();
+    const email = (t.u_correo_electronico || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return fullName.includes(term) || email.includes(term);
+  });
+
+  // ── Exportar historial de sueldos a PDF ─────────────────────────────────────
+  const salaryExportColumns = [
+    { key: 'en_u_id', header: 'UUID' },
+    { key: 'u_nombres', header: 'Nombres' },
+    { key: 'u_apellidos', header: 'Apellidos' },
+    { key: 'u_correo_electronico', header: 'Correo' },
+    { key: 'en_sueldo_base', header: 'Sueldo Base', format: (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    { key: 'total_pagado', header: 'Total Pagado', format: (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    { key: 'en_fecha_contratacion', header: 'Fecha Contratación', format: (v) => v ? new Date(v).toLocaleDateString('es-ES') : '' }
+  ];
+
+  const handleExportSalaryPDF = () => {
+    exportToPDF({
+      data: filteredSalaryHistory,
+      columns: salaryExportColumns,
+      title: 'Reporte de Sueldos Pagados - BodyHealth',
+      filename: `sueldos_pagados_${new Date().toISOString().split('T')[0]}.pdf`,
+      columnStyles: {
+        0: { halign: 'left', cellWidth: 45 },
+        1: { halign: 'left' },
+        2: { halign: 'left' }
+      }
+    });
+  };
+
+  const handleExportSalaryExcel = () => {
+    exportToExcel({
+      data: filteredSalaryHistory,
+      columns: salaryExportColumns,
+      title: 'Reporte de Sueldos Pagados - BodyHealth',
+      filename: `sueldos_pagados_${new Date().toISOString().split('T')[0]}.xlsx`
+    });
+  };
 
   // ── Estadísticas ──────────────────────────────────────────────────────────
   const sueldoPromedio = trainers.length > 0
@@ -283,67 +356,127 @@ const EntrenadoresView = () => {
             Registra, edita y elimina entrenadores en tiempo real.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.25rem', background: '#fafaf9', padding: '0.25rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)' }}>
+            <button
+              onClick={() => setViewMode('trainers')}
+              className={`btn-icon ${viewMode === 'trainers' ? 'active' : ''}`}
+              style={{ background: viewMode === 'trainers' ? 'var(--primary)' : 'none', color: viewMode === 'trainers' ? '#fff' : 'var(--on-surface)', border: 'none', borderRadius: '0.375rem', padding: '0.5rem' }}
+              title="Ver entrenadores"
+            >
+              <UserPlus size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('salary')}
+              className={`btn-icon ${viewMode === 'salary' ? 'active' : ''}`}
+              style={{ background: viewMode === 'salary' ? 'var(--primary)' : 'none', color: viewMode === 'salary' ? '#fff' : 'var(--on-surface)', border: 'none', borderRadius: '0.375rem', padding: '0.5rem' }}
+              title="Ver sueldos pagados"
+            >
+              <CreditCard size={16} />
+            </button>
+          </div>
           <button
             className="btn-secondary"
-            onClick={fetchEntrenadores}
-            disabled={loading}
+            onClick={viewMode === 'trainers' ? fetchEntrenadores : fetchSalarioHistorial}
+            disabled={viewMode === 'trainers' ? loading : loadingHistory}
             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             title="Recargar desde la base de datos"
           >
-            <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            <RefreshCw size={15} style={{ animation: (viewMode === 'trainers' ? loading : loadingHistory) ? 'spin 1s linear infinite' : 'none' }} />
             Recargar
           </button>
-          <button
-            className="btn-primary"
-            onClick={() => handleOpenModal()}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <UserPlus size={16} />
-            Añadir Entrenador
-          </button>
+          {viewMode === 'trainers' && (
+            <button
+              className="btn-primary"
+              onClick={() => handleOpenModal()}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <UserPlus size={16} />
+              Añadir Entrenador
+            </button>
+          )}
         </div>
       </section>
 
-      {/* ── Tarjetas de estadísticas ────────────────────────────────────── */}
-      <section className="stats-grid">
-        <div className="stat-card">
-          <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
-              Total Entrenadores
-            </span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{trainers.length}</span>
-          </div>
-          <span className="badge badge-primary">Equipo Activo</span>
-        </div>
-
-        <div className="stat-card">
-          <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
-              Sueldo Promedio
-            </span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-              ${sueldoPromedio.toFixed(2)}
-            </span>
-          </div>
-          <span className="badge badge-success">Nivel Base</span>
-        </div>
-
-        <div className="stat-card">
-          <div>
-            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
-              Sueldo Máximo
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
-                ${sueldoMax.toFixed(2)}
+      {/* ── Tarjetas de estadísticas ────────────────────────────────────────────────── */}
+      {viewMode === 'trainers' && (
+        <section className="stats-grid">
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Total Entrenadores
               </span>
-              <Star size={16} color="var(--tertiary)" fill="var(--tertiary)" />
+              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{trainers.length}</span>
             </div>
+            <span className="badge badge-primary">Equipo Activo</span>
           </div>
-          <span style={{ fontSize: '0.625rem', fontWeight: '500', color: 'var(--on-surface-variant)' }}>Top del equipo</span>
-        </div>
-      </section>
+
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Sueldo Promedio
+              </span>
+              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
+                ${sueldoPromedio.toFixed(2)}
+              </span>
+            </div>
+            <span className="badge badge-success">Nivel Base</span>
+          </div>
+
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Sueldo Máximo
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
+                  ${sueldoMax.toFixed(2)}
+                </span>
+                <Star size={16} color="var(--tertiary)" fill="var(--tertiary)" />
+              </div>
+            </div>
+            <span style={{ fontSize: '0.625rem', fontWeight: '500', color: 'var(--on-surface-variant)' }}>Top del equipo</span>
+          </div>
+        </section>
+      )}
+
+      {viewMode === 'salary' && (
+        <section className="stats-grid">
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Total Entrenadores
+              </span>
+              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>{salaryHistory.length}</span>
+            </div>
+            <span className="badge badge-primary">Con Pagos</span>
+          </div>
+
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Total Pagado
+              </span>
+              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif', color: '#16a34a' }}>
+                ${salaryHistory.reduce((acc, t) => acc + Number(t.total_pagado || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <span className="badge badge-success">Acumulado</span>
+          </div>
+
+          <div className="stat-card">
+            <div>
+              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                Promedio por Entrenador
+              </span>
+              <span style={{ fontSize: '1.5rem', fontWeight: '700', fontFamily: 'Noto Serif' }}>
+                ${salaryHistory.length > 0 ? (salaryHistory.reduce((acc, t) => acc + Number(t.total_pagado || 0), 0) / salaryHistory.length).toFixed(2) : '0.00'}
+              </span>
+            </div>
+            <span style={{ fontSize: '0.625rem', fontWeight: '500', color: 'var(--on-surface-variant)' }}>Por persona</span>
+          </div>
+        </section>
+      )}
 
       {/* ── Barra de búsqueda ───────────────────────────────────────────── */}
       <div className="admin-toolbar">
@@ -352,7 +485,7 @@ const EntrenadoresView = () => {
           <input
             type="text"
             className="admin-search-input"
-            placeholder="Buscar por nombre, horario o UUID..."
+            placeholder={viewMode === 'trainers' ? 'Buscar por nombre, horario o UUID...' : 'Buscar por nombre, email o periodo...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -363,24 +496,50 @@ const EntrenadoresView = () => {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
-          <button
-            className="btn-secondary"
-            onClick={handleExportPDF}
-            disabled={filteredTrainers.length === 0}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
-            title="Exportar a PDF"
-          >
-            <FileText size={15} />
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={handleExportExcel}
-            disabled={filteredTrainers.length === 0}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
-            title="Exportar a Excel"
-          >
-            <FileSpreadsheet size={15} />
-          </button>
+          {viewMode === 'trainers' && (
+            <>
+              <button
+                className="btn-secondary"
+                onClick={handleExportPDF}
+                disabled={filteredTrainers.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
+                title="Exportar a PDF"
+              >
+                <FileText size={15} />
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={handleExportExcel}
+                disabled={filteredTrainers.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredTrainers.length === 0 ? 0.5 : 1 }}
+                title="Exportar a Excel"
+              >
+                <FileSpreadsheet size={15} />
+              </button>
+            </>
+          )}
+          {viewMode === 'salary' && (
+            <>
+              <button
+                className="btn-secondary"
+                onClick={handleExportSalaryPDF}
+                disabled={filteredSalaryHistory.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredSalaryHistory.length === 0 ? 0.5 : 1 }}
+                title="Exportar a PDF"
+              >
+                <FileText size={15} />
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={handleExportSalaryExcel}
+                disabled={filteredSalaryHistory.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: filteredSalaryHistory.length === 0 ? 0.5 : 1 }}
+                title="Exportar a Excel"
+              >
+                <FileSpreadsheet size={15} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -409,155 +568,299 @@ const EntrenadoresView = () => {
         </div>
       )}
 
-      {/* ── Tabla de entrenadores ───────────────────────────────────────── */}
-      <section className="data-table-container">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Hash size={13} /> UUID / Entrenador
-                  </div>
-                </th>
-                <th>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Clock size={13} /> Horario Asignado
-                  </div>
-                </th>
-                <th>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <DollarSign size={13} /> Sueldo Base
-                  </div>
-                </th>
-                <th>Contratación</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+      {/* ── Tabla de entrenadores / Sueldos Pagados ───────────────────────────────────────── */}
+      {viewMode === 'trainers' && (
+        <section className="data-table-container">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ width: '28px', height: '28px', border: '3px solid var(--outline-variant)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                      <span style={{ fontSize: '0.875rem' }}>Cargando entrenadores desde la base de datos...</span>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Hash size={13} /> UUID / Entrenador
                     </div>
-                  </td>
-                </tr>
-              ) : filteredTrainers.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                      <UserPlus size={32} style={{ opacity: 0.3 }} />
-                      <span style={{ fontSize: '0.875rem' }}>
-                        {searchTerm ? `Sin resultados para "${searchTerm}"` : 'No hay entrenadores registrados.'}
-                      </span>
-                      {!searchTerm && (
-                        <button className="btn-primary" onClick={() => handleOpenModal()} style={{ marginTop: '0.5rem', fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-                          Registrar primero
-                        </button>
-                      )}
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Clock size={13} /> Horario Asignado
                     </div>
-                  </td>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <DollarSign size={13} /> Sueldo Base
+                    </div>
+                  </th>
+                  <th>Contratación</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
-              ) : (
-                filteredTrainers.map((t) => (
-                  <tr key={t.en_u_id} style={{ opacity: deleting === t.en_u_id ? 0.4 : 1, transition: 'opacity 0.2s' }}>
-                    {/* UUID + Nombre */}
-                    <td>
-                      <div>
-                        <p style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.15rem' }}>
-                          {t.u_nombres ? `${t.u_nombres} ${t.u_apellidos || ''}`.trim() : '—'}
-                        </p>
-                        <p style={{ fontSize: '0.6rem', color: '#a8a29e', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                          {t.en_u_id}
-                        </p>
-                        {t.u_correo_electronico && (
-                          <p style={{ fontSize: '0.7rem', color: '#78716c' }}>{t.u_correo_electronico}</p>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Horario */}
-                    <td>
-                      <span style={{
-                        display: 'inline-block',
-                        background: '#f0f9ff',
-                        color: '#0369a1',
-                        border: '1px solid #bae6fd',
-                        borderRadius: '999px',
-                        padding: '0.2rem 0.65rem',
-                        fontSize: '0.7rem',
-                        fontWeight: '600',
-                      }}>
-                        {t.en_horario_assigned || '—'}
-                      </span>
-                    </td>
-
-                    {/* Sueldo */}
-                    <td>
-                      <span style={{ fontFamily: 'Noto Serif', fontWeight: '700', fontSize: '1rem', color: 'var(--primary)' }}>
-                        ${Number(t.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </td>
-
-                    {/* Fecha contratación */}
-                    <td>
-                      <span style={{ fontSize: '0.75rem', color: '#78716c' }}>
-                        {t.en_fecha_contratacion
-                          ? new Date(t.en_fecha_contratacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })
-                          : '—'}
-                      </span>
-                    </td>
-
-                    {/* Acciones */}
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button
-                          className="btn-icon"
-                          onClick={() => handleOpenModal(t)}
-                          title="Editar entrenador"
-                          disabled={deleting === t.en_u_id}
-                        >
-                          <Edit size={17} />
-                        </button>
-                        <button
-                          className="btn-icon danger"
-                          onClick={() => handleDelete(t.en_u_id)}
-                          title="Eliminar entrenador"
-                          disabled={deleting === t.en_u_id}
-                        >
-                          {deleting === t.en_u_id
-                            ? <div style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                            : <Trash2 size={17} />
-                          }
-                        </button>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '28px', height: '28px', border: '3px solid var(--outline-variant)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span style={{ fontSize: '0.875rem' }}>Cargando entrenadores desde la base de datos...</span>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : filteredTrainers.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                        <UserPlus size={32} style={{ opacity: 0.3 }} />
+                        <span style={{ fontSize: '0.875rem' }}>
+                          {searchTerm ? `Sin resultados para "${searchTerm}"` : 'No hay entrenadores registrados.'}
+                        </span>
+                        {!searchTerm && (
+                          <button className="btn-primary" onClick={() => handleOpenModal()} style={{ marginTop: '0.5rem', fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                            Registrar primero
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTrainers.map((t) => (
+                    <tr key={t.en_u_id} style={{ opacity: deleting === t.en_u_id ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+                      {/* UUID + Nombre */}
+                      <td>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.15rem' }}>
+                            {t.u_nombres ? `${t.u_nombres} ${t.u_apellidos || ''}`.trim() : '—'}
+                          </p>
+                          <p style={{ fontSize: '0.6rem', color: '#a8a29e', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                            {t.en_u_id}
+                          </p>
+                          {t.u_correo_electronico && (
+                            <p style={{ fontSize: '0.7rem', color: '#78716c' }}>{t.u_correo_electronico}</p>
+                          )}
+                        </div>
+                      </td>
 
-        {/* Footer de la tabla */}
-        <div style={{
-          padding: '0.875rem 1.5rem',
-          backgroundColor: '#fafaf9',
-          borderTop: '1px solid var(--outline-variant)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em' }}>
-            Mostrando {filteredTrainers.length} de {trainers.length} entrenadores
-          </span>
-          <span style={{ fontSize: '0.625rem', color: '#a8a29e' }}>
-            Tabla: <code>entrenador</code> — Base de datos PostgreSQL
-          </span>
-        </div>
-      </section>
+                      {/* Horario */}
+                      <td>
+                        <span style={{
+                          display: 'inline-block',
+                          background: '#f0f9ff',
+                          color: '#0369a1',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '999px',
+                          padding: '0.2rem 0.65rem',
+                          fontSize: '0.7rem',
+                          fontWeight: '600',
+                        }}>
+                          {t.en_horario_assigned || '—'}
+                        </span>
+                      </td>
+
+                      {/* Sueldo */}
+                      <td>
+                        <span style={{ fontFamily: 'Noto Serif', fontWeight: '700', fontSize: '1rem', color: 'var(--primary)' }}>
+                          ${Number(t.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
+
+                      {/* Fecha contratación */}
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: '#78716c' }}>
+                          {t.en_fecha_contratacion
+                            ? new Date(t.en_fecha_contratacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })
+                            : '—'}
+                        </span>
+                      </td>
+
+                      {/* Acciones */}
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <button
+                            className="btn-icon"
+                            onClick={() => handleOpenModal(t)}
+                            title="Editar entrenador"
+                            disabled={deleting === t.en_u_id}
+                          >
+                            <Edit size={17} />
+                          </button>
+                          <button
+                            className="btn-icon danger"
+                            onClick={() => handleDelete(t.en_u_id)}
+                            title="Eliminar entrenador"
+                            disabled={deleting === t.en_u_id}
+                          >
+                            {deleting === t.en_u_id
+                              ? <div style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                              : <Trash2 size={17} />
+                            }
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer de la tabla */}
+          <div style={{
+            padding: '0.875rem 1.5rem',
+            backgroundColor: '#fafaf9',
+            borderTop: '1px solid var(--outline-variant)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em' }}>
+              Mostrando {filteredTrainers.length} de {trainers.length} entrenadores
+            </span>
+            <span style={{ fontSize: '0.625rem', color: '#a8a29e' }}>
+              Tabla: <code>entrenador</code> — Base de datos PostgreSQL
+            </span>
+          </div>
+        </section>
+      )}
+
+      {viewMode === 'salary' && (
+        <section className="data-table-container">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Hash size={13} /> UUID / Entrenador
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <DollarSign size={13} /> Sueldo Base
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <CreditCard size={13} /> Total Pagado
+                    </div>
+                  </th>
+                  <th>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Receipt size={13} /> Nº Pagos
+                    </div>
+                  </th>
+                  <th>Contratación</th>
+                  <th style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                      <Eye size={13} /> Detalle
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingHistory ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '28px', height: '28px', border: '3px solid var(--outline-variant)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span style={{ fontSize: '0.875rem' }}>Cargando historial de sueldos...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredSalaryHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: '#78716c' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                        <CreditCard size={32} style={{ opacity: 0.3 }} />
+                        <span style={{ fontSize: '0.875rem' }}>
+                          {searchTerm ? `Sin resultados para "${searchTerm}"` : 'No hay historial de pagos registrado.'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSalaryHistory.map((t) => {
+                    const pagos = t.historial_pagos || [];
+                    return (
+                      <tr key={t.en_u_id}>
+                        {/* UUID + Nombre */}
+                        <td>
+                          <div>
+                            <p style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.15rem' }}>
+                              {t.u_nombres ? `${t.u_nombres} ${t.u_apellidos || ''}`.trim() : '—'}
+                            </p>
+                            <p style={{ fontSize: '0.6rem', color: '#a8a29e', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                              {t.en_u_id}
+                            </p>
+                            {t.u_correo_electronico && (
+                              <p style={{ fontSize: '0.7rem', color: '#78716c' }}>{t.u_correo_electronico}</p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Sueldo Base */}
+                        <td>
+                          <span style={{ fontFamily: 'Noto Serif', fontWeight: '600', fontSize: '0.9rem', color: '#78716c' }}>
+                            ${Number(t.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+
+                        {/* Total Pagado */}
+                        <td>
+                          <span style={{ fontFamily: 'Noto Serif', fontWeight: '700', fontSize: '1.1rem', color: '#16a34a' }}>
+                            ${Number(t.total_pagado || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+
+                        {/* Número de pagos */}
+                        <td>
+                          <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--primary)' }}>
+                            {pagos.length}
+                          </span>
+                        </td>
+
+                        {/* Fecha contratación */}
+                        <td>
+                          <span style={{ fontSize: '0.75rem', color: '#78716c' }}>
+                            {t.en_fecha_contratacion
+                              ? new Date(t.en_fecha_contratacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })
+                              : '—'}
+                          </span>
+                        </td>
+
+                        {/* Acciones - Ver detalle */}
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn-icon"
+                            onClick={() => showPaymentDetail(t)}
+                            title="Ver detalle de pagos"
+                          >
+                            <Eye size={17} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer de la tabla */}
+          <div style={{
+            padding: '0.875rem 1.5rem',
+            backgroundColor: '#fafaf9',
+            borderTop: '1px solid var(--outline-variant)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em' }}>
+              Mostrando {filteredSalaryHistory.length} de {salaryHistory.length} entrenadores
+            </span>
+            <span style={{ fontSize: '0.625rem', color: '#a8a29e' }}>
+              Tabla: <code>historial_sueldo</code> — Base de datos PostgreSQL
+            </span>
+          </div>
+        </section>
+      )}
 
       {/* ── Modal Crear / Editar ─────────────────────────────────────────── */}
       {showModal && (
@@ -572,7 +875,7 @@ const EntrenadoresView = () => {
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.2rem' }}>
                   {editingTrainer
                     ? `UUID: ${editingTrainer.en_u_id}`
-                    : 'El UUID debe corresponder a un usuario existente en la tabla usuario.'}
+                    : 'Selecciona un usuario con rol Entrenador (u_r_id = 3) para registrarlo como entrenador.'}
                 </p>
               </div>
               <button className="btn-icon" onClick={handleCloseModal} disabled={saving}>
@@ -602,23 +905,33 @@ const EntrenadoresView = () => {
                   </div>
                 )}
 
-                {/* UUID del usuario — solo al crear */}
+                {/* Usuario (dropdown) — solo al crear */}
                 {!editingTrainer && (
                   <div className="admin-form-group">
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Hash size={13} /> UUID del Usuario (en_u_id)
+                      <Hash size={13} /> Usuario (Rol: Entrenador)
                     </label>
-                    <input
-                      type="text"
-                      className="admin-input"
+                    <select
+                      className="admin-select"
                       value={formData.en_u_id}
                       onChange={(e) => setFormData({ ...formData, en_u_id: e.target.value })}
-                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                       required
                       autoFocus
-                    />
+                    >
+                      <option value="">— Selecciona un usuario —</option>
+                      {availableUsers.map((user) => (
+                        <option key={user.u_id} value={user.u_id}>
+                          {user.u_nombres} {user.u_apellidos} — {user.u_correo_electronico}
+                        </option>
+                      ))}
+                    </select>
+                    {availableUsers.length === 0 && (
+                      <small style={{ color: '#dc2626', fontSize: '0.7rem', marginTop: '0.25rem', display: 'block' }}>
+                        No hay usuarios con rol 3 (Entrenador) disponibles. Primero crea un usuario con rol Entrenador en la gestión de usuarios.
+                      </small>
+                    )}
                     <small style={{ color: '#78716c', fontSize: '0.7rem', marginTop: '0.25rem', display: 'block' }}>
-                      Debe ser el <strong>u_id</strong> de un usuario registrado en la tabla <code>usuario</code>.
+                      Solo se muestran usuarios con rol <strong>Entrenador (u_r_id = 3)</strong> que no están registrados como entrenadores.
                     </small>
                   </div>
                 )}
@@ -688,6 +1001,114 @@ const EntrenadoresView = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Detalle de Pagos ─────────────────────────────────────────── */}
+      {paymentDetail && (
+        <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && handleClosePaymentDetail()}>
+          <div className="admin-modal-container" style={{ maxWidth: '700px' }}>
+            {/* Header */}
+            <div className="admin-modal-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Detalle de Pagos</h3>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.2rem' }}>
+                  {paymentDetail.u_nombres} {paymentDetail.u_apellidos} — Sueldo Base: ${Number(paymentDetail.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <button className="btn-icon" onClick={handleClosePaymentDetail}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="admin-modal-body" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fafaf9', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                      Total Pagado
+                    </span>
+                    <span style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Noto Serif', color: '#16a34a' }}>
+                      ${Number(paymentDetail.total_pagado || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                      Nº de Pagos
+                    </span>
+                    <span style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Noto Serif', color: 'var(--primary)' }}>
+                      {(paymentDetail.historial_pagos || []).length}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                      Sueldo Base
+                    </span>
+                    <span style={{ fontSize: '1.25rem', fontWeight: '700', fontFamily: 'Noto Serif', color: '#78716c' }}>
+                      ${Number(paymentDetail.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#78716c', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' }}>
+                      Contratación
+                    </span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Noto Serif', color: 'var(--on-surface)' }}>
+                      {paymentDetail.en_fecha_contratacion
+                        ? new Date(paymentDetail.en_fecha_contratacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', fontWeight: '700', color: 'var(--on-surface)' }}>Historial de Pagos</h4>
+              {(paymentDetail.historial_pagos || []).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#78716c' }}>
+                  <CreditCard size={32} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                  <p>No hay pagos registrados para este entrenador.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table" style={{ fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr>
+                        <th>ID Pago</th>
+                        <th>Monto</th>
+                        <th>Fecha Pago</th>
+                        <th>Periodo Correspondiente</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(paymentDetail.historial_pagos || []).map((pago) => (
+                        <tr key={pago.hs_id}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{pago.hs_id}</td>
+                          <td>
+                            <span style={{ fontFamily: 'Noto Serif', fontWeight: '700', color: 'var(--primary)' }}>
+                              ${Number(pago.hs_monto_pagado || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.75rem', color: '#78716c' }}>
+                            {pago.hs_fecha_pago
+                              ? new Date(pago.hs_fecha_pago).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })
+                              : '—'}
+                          </td>
+                          <td style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>
+                            {pago.hs_periodo_correspondiente || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="admin-modal-footer">
+              <button type="button" className="btn-primary" onClick={handleClosePaymentDetail} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

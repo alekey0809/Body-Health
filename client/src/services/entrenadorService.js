@@ -10,6 +10,24 @@ export const getEntrenadores = async () => {
 };
 
 /**
+ * Obtiene el historial de sueldos pagados a los entrenadores.
+ * Incluye información del entrenador y el total pagado.
+ */
+export const getSalarioHistorial = async () => {
+  const response = await api.get('/api/entrenadores/salario-historial');
+  return response.data;
+};
+
+/**
+ * Obtiene usuarios con rol 3 (Entrenador) que no están registrados como entrenadores.
+ * Para usar en el dropdown del modal de creación.
+ */
+export const getUsuariosDisponiblesParaEntrenador = async () => {
+  const response = await api.get('/api/entrenadores/disponibles');
+  return response.data;
+};
+
+/**
  * Obtiene un entrenador por su UUID (en_u_id).
  */
 export const getEntrenadorById = async (id) => {

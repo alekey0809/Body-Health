@@ -2,6 +2,8 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter/PasswordStrengthMeter';
+import { validateUserRegistration, sanitizeDocumentInput } from '../../utils/validationUtils';
 import './RegisterPage.css';
 
 const RegisterPage = () => {
@@ -22,12 +24,35 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'numeroDoc') {
+      const sanitized = sanitizeDocumentInput(formData.idTipoDoc, value);
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+    } else if (name === 'idTipoDoc') {
+      const newTipoDoc = parseInt(value, 10);
+      setFormData((prev) => ({
+        ...prev,
+        idTipoDoc: newTipoDoc,
+        numeroDoc: sanitizeDocumentInput(newTipoDoc, prev.numeroDoc)
+      }));
+    } else if (name === 'contacto') {
+      const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
+      setFormData((prev) => ({ ...prev, contacto: onlyDigits }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const validationError = validateUserRegistration(formData);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     try {
       await register(formData);
@@ -67,7 +92,20 @@ const RegisterPage = () => {
 
         {/* Right Column: Registration Form */}
         <section className="register-form-section">
-          {error && <div style={{ color: 'var(--error)', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
+          {error && (
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '0.875rem 1rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1.5rem',
+              fontWeight: '600',
+              fontSize: '0.875rem'
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="register-form">
             <div className="form-row">
@@ -88,7 +126,7 @@ const RegisterPage = () => {
               </div>
               <div className="form-group">
                 <label htmlFor="contacto">Número de Teléfono</label>
-                <input type="tel" id="contacto" name="contacto" value={formData.contacto} onChange={handleChange} placeholder="+57 300 000 0000" required />
+                <input type="tel" id="contacto" name="contacto" value={formData.contacto} onChange={handleChange} placeholder="Ej. 3000000000" maxLength={10} required />
               </div>
             </div>
 
@@ -96,21 +134,43 @@ const RegisterPage = () => {
               <div className="form-group">
                 <label htmlFor="idTipoDoc">Tipo de Documento</label>
                 <select id="idTipoDoc" name="idTipoDoc" value={formData.idTipoDoc} onChange={handleChange} required>
-                  <option value="1">Cédula de Ciudadanía</option>
-                  <option value="2">Cédula de Extranjería</option>
+                  <option value="1">Cédula de Ciudadanía (10 dígitos)</option>
+                  <option value="2">Cédula de Extranjería (6 ó 7 dígitos)</option>
                   <option value="3">Pasaporte</option>
+                  <option value="4">Tarjeta de Identidad (10 dígitos)</option>
                 </select>
               </div>
               <div className="form-group">
                 <label htmlFor="numeroDoc">Número de Documento</label>
-                <input type="text" id="numeroDoc" name="numeroDoc" value={formData.numeroDoc} onChange={handleChange} placeholder="1234567890" required />
+                <input 
+                  type="text" 
+                  id="numeroDoc" 
+                  name="numeroDoc" 
+                  value={formData.numeroDoc} 
+                  onChange={handleChange} 
+                  placeholder={
+                    Number(formData.idTipoDoc) === 1 ? "Ej. 1020304050 (10 dígitos)" :
+                    Number(formData.idTipoDoc) === 2 ? "Ej. 123456 (6 ó 7 dígitos)" :
+                    Number(formData.idTipoDoc) === 4 ? "Ej. 1098765432 (10 dígitos)" : "Ej. AB123456"
+                  } 
+                  required 
+                />
               </div>
             </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="contrasena">Contraseña</label>
-                <input type="password" id="contrasena" name="contrasena" value={formData.contrasena} onChange={handleChange} placeholder="••••••••" required />
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="contrasena">Contraseña del Sistema</label>
+                <input 
+                  type="password" 
+                  id="contrasena" 
+                  name="contrasena" 
+                  value={formData.contrasena} 
+                  onChange={handleChange} 
+                  placeholder="••••••••" 
+                  required 
+                />
+                <PasswordStrengthMeter password={formData.contrasena} />
               </div>
             </div>
 
@@ -144,4 +204,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default RegisterPage;

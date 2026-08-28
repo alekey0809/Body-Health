@@ -2,9 +2,67 @@ import { UserModel } from '../models/user.model.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
+// Helper de validación de backend
+const validateUserData = ({ nombres, apellidos, correo, contrasena, idTipoDoc, numeroDoc, contacto }, isNew = true) => {
+    if (!nombres || typeof nombres !== 'string' || nombres.trim().length < 2) {
+        return "Los nombres son requeridos y deben tener al menos 2 caracteres.";
+    }
+    if (!apellidos || typeof apellidos !== 'string' || apellidos.trim().length < 2) {
+        return "Los apellidos son requeridos y deben tener al menos 2 caracteres.";
+    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!correo || !emailRegex.test(String(correo).trim())) {
+        return "Ingresa un correo electrónico válido (ejemplo: usuario@ejemplo.com).";
+    }
+    if (isNew) {
+        const strPass = String(contrasena || '');
+        const hasMinLength = strPass.length >= 8;
+        const hasUpper = /[A-Z]/.test(strPass);
+        const hasLower = /[a-z]/.test(strPass);
+        const hasNumber = /[0-9]/.test(strPass);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(strPass);
+        if (!hasMinLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+            return "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.";
+        }
+    }
+    if (numeroDoc) {
+        const docStr = String(numeroDoc).trim();
+        const typeStr = String(idTipoDoc || 1).trim();
+        if (typeStr === '1' || typeStr === 'CC') {
+            if (!/^\d+$/.test(docStr) || docStr.length !== 10) {
+                return "La Cédula de Ciudadanía debe contener exactamente 10 dígitos numéricos.";
+            }
+        } else if (typeStr === '2' || typeStr === 'CE') {
+            if (!/^\d+$/.test(docStr) || (docStr.length !== 6 && docStr.length !== 7)) {
+                return "La Cédula de Extranjería debe contener 6 o 7 dígitos numéricos.";
+            }
+        } else if (typeStr === '4' || typeStr === 'TI') {
+            if (!/^\d+$/.test(docStr) || docStr.length !== 10) {
+                return "La Tarjeta de Identidad debe contener exactamente 10 dígitos numéricos.";
+            }
+        } else if (typeStr === '3' || typeStr === 'PAS') {
+            if (!/^[a-zA-Z0-9]+$/.test(docStr) || docStr.length < 6 || docStr.length > 12) {
+                return "El Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos.";
+            }
+        }
+    }
+    if (contacto) {
+        const phoneStr = String(contacto).trim();
+        if (!/^\d+$/.test(phoneStr) || phoneStr.length < 7 || phoneStr.length > 10) {
+            return "El teléfono de contacto debe tener entre 7 y 10 dígitos numéricos.";
+        }
+    }
+    return null;
+};
+
 // CONTROLADOR DEL REGISTRO
 export const register = async (req, res) => {
     try {
+        const valError = validateUserData(req.body, true);
+        if (valError) {
+            return res.status(400).json({ ok: false, message: valError });
+        }
+
         const newUser = await UserModel.create(req.body);
         return res.status(201).json({
             ok: true,
@@ -132,6 +190,11 @@ export const getUserById = async (req, res) => {
 // CONTROLADOR PARA ACTUALIZAR USUARIO DESDE ADMIN
 export const updateUserAdmin = async (req, res) => {
     try {
+        const valError = validateUserData(req.body, false);
+        if (valError) {
+            return res.status(400).json({ ok: false, message: valError });
+        }
+
         const userId = req.params.id;
         const updatedUser = await UserModel.updateAdmin(userId, req.body);
         if (!updatedUser) {

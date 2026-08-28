@@ -10,6 +10,7 @@ import pagoRoutes from './routes/pago.routes.js';
 import asistenciaRoutes from './routes/asistencia.routes.js';
 import noticiaRoutes from './routes/noticia.routes.js';
 import rutinaRoutes from './routes/rutina.routes.js';
+import historialSueldoRoutes from './routes/historialSueldo.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,8 @@ app.use('/api/planes', planRoutes);
 app.use('/api/entrenadores', entrenadorRoutes);
 // Rutas de Pagos
 app.use('/api/pagos', pagoRoutes);
+// Rutas de Historial de Sueldos
+app.use('/api/historial-sueldos', historialSueldoRoutes);
 // Rutas de Asistencias (PostgreSQL)
 app.use('/api/asistencia', asistenciaRoutes);
 // Rutas de Noticias / Publicaciones (PostgreSQL)

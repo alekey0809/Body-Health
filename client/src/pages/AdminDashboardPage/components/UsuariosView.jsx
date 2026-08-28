@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { getUsuarios, createUsuario, updateUsuarioAdmin, deleteUsuario } from '../../../services/userService';
 import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
+import PasswordStrengthMeter from '../../../components/PasswordStrengthMeter/PasswordStrengthMeter';
+import { validateUserRegistration, sanitizeDocumentInput } from '../../../utils/validationUtils';
 
 // ─── Catálogos ────────────────────────────────────────────────────────────────
 const TIPOS_DOC = [
@@ -177,13 +179,20 @@ const UsuariosView = () => {
 
   // ── Validación ────────────────────────────────────────────────────────────
   const validate = () => {
-    if (!formData.u_nombres.trim()) { setFormError('Los nombres son obligatorios.'); return false; }
-    if (!formData.u_apellidos.trim()) { setFormError('Los apellidos son obligatorios.'); return false; }
-    if (!formData.u_correo_electronico.trim()) { setFormError('El correo electrónico es obligatorio.'); return false; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.u_correo_electronico)) { setFormError('El correo no tiene un formato válido.'); return false; }
-    if (!editingUser && !formData.u_contrasena) { setFormError('La contraseña es obligatoria para nuevos usuarios.'); return false; }
-    if (!editingUser && formData.u_contrasena.length < 6) { setFormError('La contraseña debe tener al menos 6 caracteres.'); return false; }
+    const errorMsg = validateUserRegistration({
+      nombres: formData.u_nombres,
+      apellidos: formData.u_apellidos,
+      correo: formData.u_correo_electronico,
+      idTipoDoc: formData.u_td_id,
+      numeroDoc: formData.u_numero_documento,
+      contacto: formData.u_numero_contacto,
+      contrasena: editingUser ? undefined : formData.u_contrasena
+    });
+
+    if (errorMsg) {
+      setFormError(errorMsg);
+      return false;
+    }
     setFormError('');
     return true;
   };
@@ -652,7 +661,14 @@ const UsuariosView = () => {
                   <div className="admin-form-group">
                     <label>Tipo Doc. <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_td_id)</small></label>
                     <select className="admin-select" value={formData.u_td_id}
-                      onChange={(e) => setFormData({ ...formData, u_td_id: parseInt(e.target.value) || 1 })}>
+                      onChange={(e) => {
+                        const newType = parseInt(e.target.value) || 1;
+                        setFormData({
+                          ...formData,
+                          u_td_id: newType,
+                          u_numero_documento: sanitizeDocumentInput(newType, formData.u_numero_documento)
+                        });
+                      }}>
                       {TIPOS_DOC.map((t) => (
                         <option key={t.id} value={t.id}>{t.id} — {t.label}</option>
                       ))}
@@ -661,10 +677,14 @@ const UsuariosView = () => {
                   <div className="admin-form-group">
                     <label>N° Documento <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_numero_documento)</small></label>
                     <input
-                      type="number" className="admin-input"
+                      type="text" className="admin-input"
                       value={formData.u_numero_documento}
-                      onChange={(e) => setFormData({ ...formData, u_numero_documento: e.target.value })}
-                      placeholder="Ej. 1020304050"
+                      onChange={(e) => setFormData({ ...formData, u_numero_documento: sanitizeDocumentInput(formData.u_td_id, e.target.value) })}
+                      placeholder={
+                        Number(formData.u_td_id) === 1 ? "Ej. 1020304050 (10 dígitos)" :
+                        Number(formData.u_td_id) === 2 ? "Ej. 123456 (6 ó 7 dígitos)" :
+                        Number(formData.u_td_id) === 4 ? "Ej. 1098765432 (10 dígitos)" : "Ej. AB123456"
+                      }
                     />
                   </div>
                 </div>
@@ -692,11 +712,9 @@ const UsuariosView = () => {
                       type="password" className="admin-input"
                       value={formData.u_contrasena}
                       onChange={(e) => setFormData({ ...formData, u_contrasena: e.target.value })}
-                      placeholder="Mínimo 6 caracteres" required
+                      placeholder="Mínimo 8 caracteres" required
                     />
-                    <small style={{ color: '#78716c', fontSize: '0.7rem', display: 'block', marginTop: '0.2rem' }}>
-                      Se almacena como hash SHA-256. Por defecto: <code>123456</code>
-                    </small>
+                    <PasswordStrengthMeter password={formData.u_contrasena} />
                   </div>
                 )}
 
@@ -718,9 +736,9 @@ const UsuariosView = () => {
                       <Phone size={12} /> N° Contacto <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_numero_contacto)</small>
                     </label>
                     <input
-                      type="number" className="admin-input"
+                      type="text" className="admin-input" maxLength={10}
                       value={formData.u_numero_contacto}
-                      onChange={(e) => setFormData({ ...formData, u_numero_contacto: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, u_numero_contacto: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                       placeholder="Ej. 3001234567"
                     />
                   </div>
