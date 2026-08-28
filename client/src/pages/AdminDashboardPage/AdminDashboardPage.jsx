@@ -12,6 +12,7 @@ import UsuariosView from './components/UsuariosView';
 import PublicacionesView from './components/PublicacionesView';
 import RutinasView from './components/RutinasView';
 import RespaldoView from './components/RespaldoView';
+import EventosView from './components/EventosView';
   
 const AdminDashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
@@ -79,6 +80,15 @@ const AdminDashboardPage = () => {
             >
               <CreditCard size={20} />
               <span className="nav-item-text">Pagos</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('eventos')}
+              className={`nav-item ${activeTab === 'eventos' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <Calendar size={20} />
+              <span className="nav-item-text">Eventos</span>
             </button>
 
             <button
@@ -203,6 +213,14 @@ const AdminDashboardPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('eventos'); setIsMobileMenuOpen(false); }}
+                className={`admin-mobile-nav-link ${activeTab === 'eventos' ? 'active' : ''}`}
+              >
+                <Calendar size={20} />
+                <span>Eventos</span>
+              </button>
+
+              <button
                 onClick={() => { setActiveTab('usuarios'); setIsMobileMenuOpen(false); }}
                 className={`admin-mobile-nav-link ${activeTab === 'usuarios' ? 'active' : ''}`}
               >
@@ -272,6 +290,7 @@ const AdminDashboardPage = () => {
           {activeTab === 'publicaciones' && <PublicacionesView />}
           {activeTab === 'rutinas' && <RutinasView />}
           {activeTab === 'respaldo' && <RespaldoView />}
+          {activeTab === 'eventos' && <EventosView />}
         </div>
       </main>
     </div>

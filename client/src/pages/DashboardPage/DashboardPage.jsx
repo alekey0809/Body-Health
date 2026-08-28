@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink } from 'lucide-react';
+import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink, Bell } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { getMembresiasByUsuario } from '../../services/pagoService';
+import { getNotificaciones, getNoLeidasCount, marcarLeida, marcarTodasLeidas } from '../../services/notificacionService';
 import './DashboardPage.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
@@ -39,14 +40,16 @@ const DashboardPage = () => {
   const [paymentStats, setPaymentStats] = useState({ total: 0, vigentes: 0, vencidas: 0 });
   const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(false);
 
+  // Estados de Notificaciones
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+
   // Estados de Rutina PDF
   const [rutinaPdfExists, setRutinaPdfExists] = useState(false);
   const [rutinaLoading, setRutinaLoading] = useState(true);
   const [currentDay, setCurrentDay] = useState(() => new Date().getDay() || 7); // 1=Lunes, 7=Domingo
-
-  useEffect(() => {
-    checkRutinaPdf();
-  }, [currentDay]);
 
   const checkRutinaPdf = async () => {
     setRutinaLoading(true);
@@ -144,6 +147,58 @@ const DashboardPage = () => {
     setShowPaymentHistory(false);
   };
 
+  // Notificaciones
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const data = await getNotificaciones({ limit: 20 });
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Error al cargar notificaciones:', err);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const count = await getNoLeidasCount();
+      setUnreadCount(count);
+    } catch (err) {
+      console.error('Error al contar no leídas:', err);
+    }
+  };
+
+  const handleOpenNotifications = async () => {
+    setShowNotifications(true);
+    await fetchNotifications();
+    await fetchUnreadCount();
+  };
+
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await marcarLeida(id);
+      setNotifications(prev => prev.map(n => n.n_id === id ? { ...n, n_leida: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error al marcar como leída:', err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await marcarTodasLeidas();
+      setNotifications(prev => prev.map(n => ({ ...n, n_leida: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error al marcar todas como leídas:', err);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -238,6 +293,19 @@ const DashboardPage = () => {
         <div className="topbar-right">
           <Link to="/main" className="btn-secondary small-btn desktop-only">Ir al Landing</Link>
           <Link to="/planes" className="btn-secondary small-btn desktop-only">Ver Planes</Link>
+          
+          {/* Notification Bell */}
+          <button 
+            className="notification-bell-btn" 
+            onClick={handleOpenNotifications}
+            aria-label="Notificaciones"
+          >
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+            )}
+          </button>
+
           <button onClick={handleLogout} className="logout-text-btn desktop-only">Salir</button>
           
           {/* Toggle Hamburger Button */}
@@ -598,6 +666,128 @@ const DashboardPage = () => {
                     ))}
                   </ul>
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Notificaciones */}
+      {showNotifications && (
+        <div className="notification-modal-overlay" onClick={handleCloseNotifications}>
+          <div className="notification-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="notification-modal-header">
+              <h3>
+                <Bell size={20} />
+                Notificaciones
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {unreadCount > 0 && (
+                  <button 
+                    className="btn-secondary small-btn" 
+                    onClick={handleMarkAllAsRead}
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                  >
+                    Marcar todas leídas
+                  </button>
+                )}
+                <button className="close-modal-btn" onClick={handleCloseNotifications} aria-label="Cerrar">
+                  <XCircle size={24} />
+                </button>
+              </div>
+            </div>
+
+            <div className="notification-modal-body">
+              {loadingNotifications ? (
+                <div className="notification-loading">Cargando notificaciones...</div>
+              ) : notifications.length === 0 ? (
+                <div className="notification-empty">
+                  <Bell size={48} style={{ color: 'var(--on-surface-variant)', opacity: 0.5 }} />
+                  <p>No tienes notificaciones</p>
+                </div>
+              ) : (
+                <ul className="notification-list">
+                  {notifications.map((notif) => {
+                    const isEvent = notif.n_tipo_evento === 'EVENTO_CREADO';
+                    const isMembresiaPorVencer = notif.n_tipo_evento === 'MEMBRESIA_POR_VENCER';
+                    const isMembresiaVencida = notif.n_tipo_evento === 'MEMBRESIA_VENCIDA';
+                    const isInfo = notif.n_tipo_evento === 'INFO';
+
+                    return (
+                      <li 
+                        key={notif.n_id} 
+                        className={`notification-item ${!notif.n_leida ? 'unread' : ''}`}
+                        onClick={() => !notif.n_leida && handleMarkAsRead(notif.n_id)}
+                      >
+                        <div className="notification-icon">
+                          {isEvent && <span className="icon-event">📅</span>}
+                          {isMembresiaPorVencer && <span className="icon-warning">⚠️</span>}
+                          {isMembresiaVencida && <span className="icon-expired">❌</span>}
+                          {isInfo && <span className="icon-info">ℹ️</span>}
+                        </div>
+                        <div className="notification-content">
+                          <div className="notification-header-row">
+                            <h4 className="notification-title">{notif.n_titulo}</h4>
+                            {!notif.n_leida && <span className="unread-dot" />}
+                          </div>
+                          <p className="notification-message">{notif.n_mensaje}</p>
+                          
+                          {/* Evento details */}
+                          {isEvent && notif.evento_nombre && (
+                            <div className="notification-event-detail">
+                              <div className="event-detail-row">
+                                <span className="event-detail-label">Evento:</span>
+                                <span className="event-detail-value">{notif.evento_nombre}</span>
+                              </div>
+                              {notif.n_evento_id && (
+                                <div className="event-detail-row">
+                                  <span className="event-detail-label">ID:</span>
+                                  <span className="event-detail-value">#{notif.n_evento_id}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Membresía details */}
+                          {(isMembresiaPorVencer || isMembresiaVencida) && notif.n_membresia_id && (
+                            <div className="notification-membresia-detail">
+                              <div className="event-detail-row">
+                                <span className="event-detail-label">Membresía ID:</span>
+                                <span className="event-detail-value">#{notif.n_membresia_id}</span>
+                              </div>
+                              {isMembresiaPorVencer && (
+                                <div className="event-detail-row warning-row">
+                                  <span className="event-detail-label">Estado:</span>
+                                  <span className="event-detail-value warning-text">Por vencer - Renueva pronto</span>
+                                </div>
+                              )}
+                              {isMembresiaVencida && (
+                                <div className="event-detail-row expired-row">
+                                  <span className="event-detail-label">Estado:</span>
+                                  <span className="event-detail-value expired-text">Vencida - Renueva para continuar</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="notification-meta">
+                            <span className="notification-time">
+                              {new Date(notif.n_fecha_envio).toLocaleString('es-CO', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                            <span className={`notification-type ${notif.n_tipo_evento.toLowerCase()}`}>
+                              {notif.n_tipo_evento}
+                            </span>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           </div>
