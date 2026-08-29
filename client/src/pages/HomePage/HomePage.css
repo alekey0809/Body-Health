@@ -256,8 +256,7 @@
   overflow: hidden;
   position: relative;
   filter: grayscale(100%);
-  transition: filter 0.7s, box-shadow 0.7s;
-  box-shadow: var(--shadow-lg);
+  transition: filter 0.7s;
   border: 1px solid var(--outline-variant);
 }
 
