@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X, LayoutDashboard, ExternalLink, Calendar, Database, DollarSign } from 'lucide-react';
+import { Home, User, Dumbbell, CreditCard, Users, FileText, LogOut, Menu, X, LayoutDashboard, ExternalLink, Calendar, Database, DollarSign, ClipboardCheck } from 'lucide-react';
 import './AdminDashboardPage.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ import RutinasView from './components/RutinasView';
 import RespaldoView from './components/RespaldoView';
 import EventosView from './components/EventosView';
 import InformesFinancierosView from './components/InformesFinancierosView';
+import AsistenciasView from './components/AsistenciasView';
   
 const AdminDashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
@@ -90,6 +91,15 @@ const AdminDashboardPage = () => {
             >
               <Calendar size={20} />
               <span className="nav-item-text">Eventos</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('asistencias')}
+              className={`nav-item ${activeTab === 'asistencias' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <ClipboardCheck size={20} />
+              <span className="nav-item-text">Ajustar Asistencias</span>
             </button>
 
             <button
@@ -231,6 +241,14 @@ const AdminDashboardPage = () => {
               </button>
 
               <button
+                onClick={() => { setActiveTab('asistencias'); setIsMobileMenuOpen(false); }}
+                className={`admin-mobile-nav-link ${activeTab === 'asistencias' ? 'active' : ''}`}
+              >
+                <ClipboardCheck size={20} />
+                <span>Ajustar Asistencias</span>
+              </button>
+
+              <button
                 onClick={() => { setActiveTab('usuarios'); setIsMobileMenuOpen(false); }}
                 className={`admin-mobile-nav-link ${activeTab === 'usuarios' ? 'active' : ''}`}
               >
@@ -309,6 +327,7 @@ const AdminDashboardPage = () => {
           {activeTab === 'rutinas' && <RutinasView />}
           {activeTab === 'respaldo' && <RespaldoView />}
           {activeTab === 'eventos' && <EventosView />}
+          {activeTab === 'asistencias' && <AsistenciasView />}
           {activeTab === 'informes' && <InformesFinancierosView />}
         </div>
       </main>

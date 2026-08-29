@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink, Bell } from 'lucide-react';
+import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink, Bell, ChevronRight, List } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
@@ -45,6 +45,9 @@ const DashboardPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+
+  // Estados de Modal Asistencias (Ver todas)
+  const [showAllAttendances, setShowAllAttendances] = useState(false);
 
   // Estados de Rutina PDF
   const [rutinaPdfExists, setRutinaPdfExists] = useState(false);
@@ -471,9 +474,23 @@ const DashboardPage = () => {
 
           {/* 4. Control de Asistencias (1 Clic Directo por Día) */}
           <div className="dash-card" id="asistencia">
-            <div className="card-header">
-              <CalendarCheck className="card-icon" /> 
-              <h3>Mis Asistencias</h3>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CalendarCheck className="card-icon" /> 
+                <h3>Mis Asistencias</h3>
+              </div>
+              {attendances.length > 0 && (
+                <button 
+                  className="btn-secondary small-btn" 
+                  onClick={() => setShowAllAttendances(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                  title="Ver historial completo de asistencias"
+                >
+                  <List size={14} />
+                  <span>Ver todas</span>
+                  <ChevronRight size={12} />
+                </button>
+              )}
             </div>
             <div className="card-body">
               {/* Mensaje de confirmación temporal */}
@@ -789,6 +806,93 @@ const DashboardPage = () => {
                   })}
                 </ul>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Todas las Asistencias */}
+      {showAllAttendances && (
+        <div className="notification-modal-overlay" onClick={() => setShowAllAttendances(false)} style={{ zIndex: 1000 }}>
+          <div className="notification-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90vw' }}>
+            <div className="notification-modal-header">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <List size={20} />
+                Historial Completo de Asistencias
+              </h3>
+              <button className="close-modal-btn" onClick={() => setShowAllAttendances(false)} aria-label="Cerrar">
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="notification-modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {attendances.length === 0 ? (
+                <div className="notification-empty" style={{ padding: '2rem', textAlign: 'center' }}>
+                  <CalendarCheck size={48} style={{ color: 'var(--on-surface-variant)', opacity: 0.5 }} />
+                  <p style={{ marginTop: '1rem', color: 'var(--on-surface-variant)' }}>No has registrado asistencias aún.</p>
+                </div>
+              ) : (
+                <ul className="notification-list" style={{ padding: '0.5rem' }}>
+                  {attendances.map((att) => {
+                    const formatted = formatAttendanceDate(att.a_fecha_hora);
+                    const dateObj = new Date(att.a_fecha_hora);
+                    const fullDateTime = dateObj.toLocaleString('es-CO', {
+                      weekday: 'long',
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    });
+                    return (
+                      <li key={att.a_id} className="notification-item" style={{ padding: '1rem', borderBottom: '1px solid var(--outline-variant)', background: 'var(--surface)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <span className="att-type-badge" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', background: '#f0fdf4', color: '#16a34a', borderRadius: '999px', fontWeight: '600' }}>
+                                ✓ Asistencia Confirmada
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--on-surface-variant)', fontFamily: 'monospace' }}>
+                                ID: {att.a_id}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: 'var(--on-surface)' }}>
+                                <CalendarCheck size={16} style={{ color: 'var(--primary)' }} />
+                                {formatted.date === 'Hoy' ? 'Hoy' : formatted.date}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--on-surface-variant)' }}>
+                                <Clock size={14} />
+                                <span>{formatted.time}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--on-surface-variant)', fontFamily: 'monospace' }}>
+                                <span>Registro completo:</span>
+                                <span>{fullDateTime}</span>
+                              </div>
+                              {att.a_observacion && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#0369a1', marginTop: '0.5rem', padding: '0.5rem', background: '#e0f2fe', borderRadius: '0.5rem' }}>
+                                  <span style={{ fontWeight: '600' }}>Observación:</span>
+                                  <span>{att.a_observacion}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="notification-modal-footer" style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)', alignSelf: 'center' }}>
+                Total: {attendances.length} asistencia{attendances.length !== 1 ? 's' : ''}
+              </span>
+              <button className="btn-primary" onClick={() => setShowAllAttendances(false)} style={{ padding: '0.5rem 1.25rem' }}>
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

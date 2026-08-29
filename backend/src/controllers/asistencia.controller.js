@@ -153,3 +153,93 @@ export const registerAttendance = async (req, res) => {
     });
   }
 };
+
+// Obtener todas las asistencias con info del usuario (Admin)
+export const getAllAttendancesAdmin = async (req, res) => {
+  try {
+    const attendances = await AsistenciaModel.getAllWithUser();
+    return res.status(200).json({
+      ok: true,
+      attendances
+    });
+  } catch (error) {
+    console.error('Error al consultar todas las asistencias (Admin):', error);
+    return res.status(500).json({ 
+      ok: false, 
+      message: `Error al consultar la base de datos PostgreSQL: ${error.message}`, 
+      error: error.message 
+    });
+  }
+};
+
+// Actualizar observación de una asistencia (Admin)
+export const updateAttendanceAdmin = async (req, res) => {
+  try {
+    const attendanceId = req.params.id;
+    const { observacion } = req.body;
+
+    if (!attendanceId || isNaN(Number(attendanceId))) {
+      return res.status(400).json({ 
+        ok: false, 
+        message: 'ID de asistencia inválido.' 
+      });
+    }
+
+    const updated = await AsistenciaModel.update(Number(attendanceId), observacion);
+    
+    if (!updated) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Asistencia no encontrada.'
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Asistencia actualizada correctamente.',
+      attendance: updated
+    });
+  } catch (error) {
+    console.error('Error al actualizar asistencia (Admin):', error);
+    return res.status(500).json({ 
+      ok: false, 
+      message: `Error al actualizar en la base de datos PostgreSQL: ${error.message}`, 
+      error: error.message 
+    });
+  }
+};
+
+// Eliminar una asistencia (Admin)
+export const deleteAttendanceAdmin = async (req, res) => {
+  try {
+    const attendanceId = req.params.id;
+
+    if (!attendanceId || isNaN(Number(attendanceId))) {
+      return res.status(400).json({ 
+        ok: false, 
+        message: 'ID de asistencia inválido.' 
+      });
+    }
+
+    const deleted = await AsistenciaModel.delete(Number(attendanceId));
+    
+    if (!deleted) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Asistencia no encontrada.'
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Asistencia eliminada correctamente.'
+    });
+  } catch (error) {
+    console.error('Error al eliminar asistencia (Admin):', error);
+    return res.status(500).json({ 
+      ok: false, 
+      message: `Error al eliminar en la base de datos PostgreSQL: ${error.message}`, 
+      error: error.message 
+    });
+  }
+};

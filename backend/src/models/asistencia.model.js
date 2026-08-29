@@ -124,6 +124,42 @@ export const AsistenciaModel = {
     const values = [userId, observacion || null];
     const { rows } = await pool.query(query, values);
     return rows[0];
+  },
+
+  // Actualizar observación de una asistencia (Admin)
+  update: async (attendanceId, observacion) => {
+    const query = `
+      UPDATE asistencia
+      SET a_observacion = $2
+      WHERE a_id = $1
+      RETURNING a_id, a_u_id, a_fecha_hora, a_observacion;
+    `;
+    const { rows } = await pool.query(query, [attendanceId, observacion || null]);
+    return rows[0] || null;
+  },
+
+  // Eliminar una asistencia (Admin)
+  delete: async (attendanceId) => {
+    const query = `
+      DELETE FROM asistencia
+      WHERE a_id = $1
+      RETURNING a_id;
+    `;
+    const { rows } = await pool.query(query, [attendanceId]);
+    return rows.length > 0;
+  },
+
+  // Obtener todas las asistencias con info del usuario (Admin)
+  getAllWithUser: async () => {
+    const query = `
+      SELECT a.a_id, a.a_u_id, a.a_fecha_hora, a.a_observacion,
+             u.u_nombres, u.u_apellidos, u.u_correo_electronico, u.u_numero_documento
+      FROM asistencia a
+      JOIN usuario u ON a.a_u_id = u.u_id
+      ORDER BY a.a_fecha_hora DESC;
+    `;
+    const { rows } = await pool.query(query);
+    return rows;
   }
 };
 
