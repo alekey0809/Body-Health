@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Dumbbell, X, FileText, FileSpreadsheet } from 'lucide-react';
-import { getPlanes, createPlan, updatePlan, deletePlan } from '../../../services/planService';
+import { getPlanes, createPlan, updatePlan, deletePlan, getMembresiasByPlan } from '../../../services/planService';
 import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
 
 const PlanesView = () => {
@@ -67,10 +67,28 @@ const PlanesView = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este plan?')) {
-      await deletePlan(id);
-      setPlanes(planes.filter(p => (p.pe_id || p.id) !== id));
+    const result = await getMembresiasByPlan(id);
+    
+    let message = '¿Estás seguro de eliminar este plan?';
+    if (result.ok && result.total > 0) {
+      message += `\n\n⚠️ ADVERTENCIA: Este plan tiene ${result.total} membresía(s) asociada(s):`;
+      if (result.vigentes > 0) {
+        message += `\n  - ${result.vigentes} ACTIVA(S) (vigente)`;
+      }
+      if (result.vencidas > 0) {
+        message += `\n  - ${result.vencidas} HISTÓRICA(S) (vencida)`;
+      }
+      message += '\n\nEl backend impedirá la eliminación hasta que se eliminen o reasignen las membresías.';
     }
+    
+    if (!window.confirm(message)) return;
+    
+    const deleteResult = await deletePlan(id);
+    if (!deleteResult.ok) {
+      alert(deleteResult.message || 'Error al eliminar el plan');
+      return;
+    }
+    setPlanes(planes.filter(p => (p.pe_id || p.id) !== id));
   };
 
   const filteredPlanes = planes.filter(p => {

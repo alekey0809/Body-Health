@@ -54,12 +54,22 @@ export const updatePlan = async (id, planData) => {
   }
 };
 
+export const getMembresiasByPlan = async (id) => {
+  try {
+    const response = await api.get(`/api/planes/${id}/membresias`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener membresías del plan:', error);
+    return { ok: false, total: 0, vigentes: 0, vencidas: 0, membresias: [] };
+  }
+};
+
 export const deletePlan = async (id) => {
   try {
     const response = await api.delete(`/api/planes/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error al eliminar plan:', error);
-    return { pe_id: id };
+    return { ok: false, message: error.response?.data?.message || 'Error al eliminar plan', pe_id: id };
   }
 };

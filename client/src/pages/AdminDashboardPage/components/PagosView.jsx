@@ -146,7 +146,17 @@ const PagosView = () => {
 
   /* ── Eliminar pago ─────────────────────────────────────────────────────── */
   const handleDelete = async (f_id) => {
-    if (!window.confirm(`¿Eliminar la factura #${f_id} y su membresía asociada?`)) return;
+    const pago = pagos.find(p => p.f_id === f_id);
+    const vigente = pago ? isMembershipActive(pago) : false;
+    
+    let message = `¿Eliminar la factura #${f_id} y su membresía asociada?`;
+    if (vigente) {
+      message += '\n\n⚠️ ADVERTENCIA: Esta membresía está ACTIVA (vigente).\nSe eliminará el acceso del cliente al gimnasio.';
+    } else {
+      message += '\n\nℹ️ Esta membresía es HISTÓRICA (vencida).\nSe eliminará el registro de forma permanente.';
+    }
+    
+    if (!window.confirm(message)) return;
     await deletePago(f_id);
     setPagos(prev => prev.filter(p => p.f_id !== f_id));
   };

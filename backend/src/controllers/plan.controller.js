@@ -1,4 +1,5 @@
 import { PlanModel } from '../models/plan.model.js';
+import { pool } from '../config/db.js';
 
 // Fallback por si la base de datos no tiene registros cargados aún
 const defaultPlanes = [
@@ -58,9 +59,62 @@ export const updatePlan = async (req, res) => {
     }
 };
 
+export const getMembresiasByPlan = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const query = `
+            SELECT 
+                m.m_id,
+                m.m_u_id,
+                m.m_fecha_inicio,
+                m.m_fecha_vencimiento,
+                m.m_eg_id,
+                eg.eg_nombre AS estado_membresia,
+                u.u_nombres,
+                u.u_apellidos,
+                u.u_numero_documento,
+                CASE 
+                    WHEN m.m_fecha_vencimiento >= CURRENT_DATE AND m.m_eg_id = 9 THEN true
+                    ELSE false
+                END AS es_vigente
+            FROM membresia m
+            JOIN usuario u ON m.m_u_id = u.u_id
+            LEFT JOIN estado_general eg ON m.m_eg_id = eg.eg_id
+            WHERE m.m_pe_id = $1
+            ORDER BY m.m_fecha_inicio DESC
+        `;
+        const { rows } = await pool.query(query, [id]);
+        
+        const vigentes = rows.filter(m => m.es_vigente);
+        const vencidas = rows.filter(m => !m.es_vigente);
+        
+        res.json({
+            ok: true,
+            total: rows.length,
+            vigentes: vigentes.length,
+            vencidas: vencidas.length,
+            membresias: rows
+        });
+    } catch (error) {
+        console.error('Error al obtener membresías del plan:', error.message);
+        res.status(500).json({ ok: false, message: 'Error al obtener membresías del plan', error: error.message });
+    }
+};
+
 export const deletePlan = async (req, res) => {
     const { id } = req.params;
     try {
+        const checkQuery = 'SELECT COUNT(*) FROM membresia WHERE m_pe_id = $1';
+        const { rows } = await pool.query(checkQuery, [id]);
+        const count = parseInt(rows[0].count, 10);
+        
+        if (count > 0) {
+            return res.status(400).json({ 
+                ok: false, 
+                message: `No se puede eliminar el plan. Tiene ${count} membresía(s) asociada(s). Elimine o reasigne las membresías primero.` 
+            });
+        }
+        
         await PlanModel.delete(id);
         res.json({ message: 'Plan eliminado correctamente' });
     } catch (error) {
