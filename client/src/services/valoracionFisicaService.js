@@ -19,8 +19,8 @@ export const getValoracionById = async (id) => {
 /**
  * Crea una nueva valoración física
  * Espera: vf_u_id, vf_peso_kg, vf_estatura_cm, vf_medida_pecho, 
- *         vf_medida_cintura, vf_medida_cadera, vf_medida_cuello, 
- *         vf_genero, vf_observaciones, vf_fecha_registro
+ *         vf_medida_cintura, vf_medida_cadera, vf_observaciones, vf_fecha_registro
+ * El género se toma automáticamente de u_genero del usuario
  */
 export const createValoracion = async (valoracionData) => {
   const response = await api.post('/api/valoracion-fisica', valoracionData);
@@ -45,45 +45,35 @@ export const deleteValoracion = async (id) => {
 
 /**
  * Calcula el porcentaje de grasa (endpoint de previsualización)
+ * Requiere userId para obtener el género del usuario
  */
-export const calcularPorcentajeGrasa = async ({ genero, estatura_cm, medida_cintura, medida_cadera, medida_cuello }) => {
+export const calcularPorcentajeGrasa = async ({ userId, estatura_cm, medida_cintura }) => {
   const response = await api.post('/api/valoracion-fisica/calcular-grasa', {
-    genero,
+    userId,
     estatura_cm,
-    medida_cintura,
-    medida_cadera,
-    medida_cuello
+    medida_cintura
   });
   return response.data;
 };
 
 /**
- * Calcula el porcentaje de grasa localmente (US Navy Method)
- * Hombres: %Fat = 495 / (1.0324 - 0.19077 * log10(cintura - cuello) + 0.15456 * log10(altura)) - 450
- * Mujeres: %Fat = 495 / (1.29579 - 0.35004 * log10(cintura + cadera - cuello) + 0.22100 * log10(altura)) - 450
+ * Calcula el porcentaje de grasa localmente (RFM - Relative Fat Mass)
+ * Woolcott & Bergman 2018
+ * Hombres: RFM = 64 - (20 * altura / cintura)
+ * Mujeres: RFM = 76 - (20 * altura / cintura)
  */
-export const calcularPorcentajeGrasaLocal = ({ genero, estaturaCm, medidaCintura, medidaCadera, medidaCuello }) => {
+export const calcularPorcentajeGrasaLocal = ({ genero, estaturaCm, medidaCintura }) => {
   const altura = estaturaCm;
   const cintura = medidaCintura;
-  const cuello = medidaCuello;
+  
+  if (!altura || !cintura || cintura <= 0) return null;
   
   if (genero === 'M') {
-    const valor = cintura - cuello;
-    if (valor <= 0) return null;
-    const logCinturaCuello = Math.log10(valor);
-    const logAltura = Math.log10(altura);
-    const denominador = 1.0324 - 0.19077 * logCinturaCuello + 0.15456 * logAltura;
-    if (denominador <= 0) return null;
-    return Math.round((495 / denominador - 450) * 100) / 100;
+    const rfm = 64 - (20 * altura / cintura);
+    return Math.round(Math.max(0, Math.min(100, rfm)) * 100) / 100;
   } else if (genero === 'F') {
-    if (!medidaCadera || medidaCadera <= 0) return null;
-    const valor = cintura + medidaCadera - cuello;
-    if (valor <= 0) return null;
-    const logCinturaCaderaCuello = Math.log10(valor);
-    const logAltura = Math.log10(altura);
-    const denominador = 1.29579 - 0.35004 * logCinturaCaderaCuello + 0.22100 * logAltura;
-    if (denominador <= 0) return null;
-    return Math.round((495 / denominador - 450) * 100) / 100;
+    const rfm = 76 - (20 * altura / cintura);
+    return Math.round(Math.max(0, Math.min(100, rfm)) * 100) / 100;
   }
   return null;
 };

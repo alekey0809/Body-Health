@@ -40,6 +40,7 @@ const EMPTY_FORM = {
   u_r_id: 1,
   u_numero_contacto: '',
   u_eg_id: 1,
+  u_genero: '',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -103,8 +104,6 @@ const UsuariosView = () => {
     vf_medida_pecho: '',
     vf_medida_cintura: '',
     vf_medida_cadera: '',
-    vf_medida_cuello: '',
-    vf_genero: 'M',
     vf_observaciones: '',
     vf_fecha_registro: new Date().toISOString().split('T')[0],
   });
@@ -182,6 +181,7 @@ const UsuariosView = () => {
         u_r_id: Number(user.u_r_id) || 1,
         u_numero_contacto: user.u_numero_contacto || '',
         u_eg_id: Number(user.u_eg_id) !== undefined ? Number(user.u_eg_id) : 1,
+        u_genero: user.u_genero || '',
       });
     } else {
       setEditingUser(null);
@@ -210,11 +210,13 @@ const UsuariosView = () => {
       vf_medida_pecho: '',
       vf_medida_cintura: '',
       vf_medida_cadera: '',
-      vf_medida_cuello: '',
-      vf_genero: 'M',
       vf_observaciones: '',
       vf_fecha_registro: new Date().toISOString().split('T')[0],
     });
+    // Calcular % grasa inicial si el usuario tiene género y hay datos
+    if (user.u_genero) {
+      // Se calculará cuando ingresen estatura y cintura
+    }
     setVfLoading(true);
     try {
       const data = await getValoracionesByUser(user.u_id);
@@ -239,8 +241,6 @@ const UsuariosView = () => {
       vf_medida_pecho: '',
       vf_medida_cintura: '',
       vf_medida_cadera: '',
-      vf_medida_cuello: '',
-      vf_genero: 'M',
       vf_observaciones: '',
       vf_fecha_registro: new Date().toISOString().split('T')[0],
     });
@@ -252,26 +252,39 @@ const UsuariosView = () => {
   const handleVfInputChange = (field, value) => {
     setVfFormData(prev => ({ ...prev, [field]: value }));
     setVfFormError('');
-    // Calcular porcentaje de grasa en tiempo real cuando cambian los campos relevantes
-    if (['vf_estatura_cm', 'vf_medida_cintura', 'vf_medida_cuello', 'vf_medida_cadera', 'vf_genero'].includes(field)) {
+    // Calcular porcentaje de grasa en tiempo real cuando cambian estatura o cintura
+    // Usa el género del usuario (vfUser.u_genero)
+    if (['vf_estatura_cm', 'vf_medida_cintura'].includes(field) && vfUser?.u_genero) {
       const newData = { ...vfFormData, [field]: value };
       const estatura = parseInt(newData.vf_estatura_cm);
       const cintura = parseFloat(newData.vf_medida_cintura);
-      const cuello = parseFloat(newData.vf_medida_cuello);
-      const cadera = parseFloat(newData.vf_medida_cadera);
-      const genero = newData.vf_genero;
+      const genero = vfUser.u_genero;
       
-      if (estatura && cintura && cuello && (genero === 'M' || (genero === 'F' && cadera))) {
+      if (estatura && cintura) {
         const porcentaje = calcularPorcentajeGrasaLocal({
           genero,
           estaturaCm: estatura,
-          medidaCintura: cintura,
-          medidaCadera: cadera || null,
-          medidaCuello: cuello
+          medidaCintura: cintura
         });
         setVfCalculatedGrasa(porcentaje);
       } else {
         setVfCalculatedGrasa(null);
+      }
+    }
+    // Si se edita y ya hay estatura y cintura, recalcular
+    if (vfEditing && ['vf_estatura_cm', 'vf_medida_cintura'].includes(field) && vfUser?.u_genero) {
+      const newData = { ...vfFormData, [field]: value };
+      const estatura = parseInt(newData.vf_estatura_cm);
+      const cintura = parseFloat(newData.vf_medida_cintura);
+      const genero = vfUser.u_genero;
+      
+      if (estatura && cintura) {
+        const porcentaje = calcularPorcentajeGrasaLocal({
+          genero,
+          estaturaCm: estatura,
+          medidaCintura: cintura
+        });
+        setVfCalculatedGrasa(porcentaje);
       }
     }
   };
@@ -284,19 +297,19 @@ const UsuariosView = () => {
       vf_medida_pecho: vf.vf_medida_pecho ? String(vf.vf_medida_pecho) : '',
       vf_medida_cintura: String(vf.vf_medida_cintura),
       vf_medida_cadera: vf.vf_medida_cadera ? String(vf.vf_medida_cadera) : '',
-      vf_medida_cuello: String(vf.vf_medida_cuello),
-      vf_genero: vf.vf_genero,
       vf_observaciones: vf.vf_observaciones || '',
       vf_fecha_registro: vf.vf_fecha_registro ? new Date(vf.vf_fecha_registro).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     });
-    const porcentaje = calcularPorcentajeGrasaLocal({
-      genero: vf.vf_genero,
-      estaturaCm: vf.vf_estatura_cm,
-      medidaCintura: vf.vf_medida_cintura,
-      medidaCadera: vf.vf_medida_cadera,
-      medidaCuello: vf.vf_medida_cuello
-    });
-    setVfCalculatedGrasa(porcentaje);
+    // Calcular % grasa usando el género del usuario (vfUser.u_genero o vf.u_genero)
+    const genero = vfUser?.u_genero || vf.u_genero;
+    if (genero) {
+      const porcentaje = calcularPorcentajeGrasaLocal({
+        genero,
+        estaturaCm: vf.vf_estatura_cm,
+        medidaCintura: vf.vf_medida_cintura
+      });
+      setVfCalculatedGrasa(porcentaje);
+    }
   };
 
   const handleDeleteVF = async (vfId) => {
@@ -312,7 +325,7 @@ const UsuariosView = () => {
   };
 
   const validateVF = () => {
-    const { vf_peso_kg, vf_estatura_cm, vf_medida_cintura, vf_medida_cuello, vf_genero, vf_medida_cadera, vf_fecha_registro } = vfFormData;
+    const { vf_peso_kg, vf_estatura_cm, vf_medida_cintura, vf_medida_cadera, vf_medida_pecho, vf_fecha_registro } = vfFormData;
     
     if (!vf_peso_kg || isNaN(parseFloat(vf_peso_kg))) {
       setVfFormError('El peso es requerido y debe ser numérico');
@@ -326,16 +339,9 @@ const UsuariosView = () => {
       setVfFormError('La medida de cintura es requerida y debe ser numérica');
       return false;
     }
-    if (!vf_medida_cuello || isNaN(parseFloat(vf_medida_cuello))) {
-      setVfFormError('La medida de cuello es requerida y debe ser numérica');
-      return false;
-    }
-    if (!vf_genero || !['M', 'F'].includes(vf_genero)) {
-      setVfFormError('El género es requerido (M o F)');
-      return false;
-    }
-    if (vf_genero === 'F' && (!vf_medida_cadera || isNaN(parseFloat(vf_medida_cadera)))) {
-      setVfFormError('La medida de cadera es requerida para mujeres');
+    // Verificar que el usuario tenga género definido
+    if (!vfUser?.u_genero) {
+      setVfFormError('El usuario no tiene género definido. Actualice el perfil del usuario.');
       return false;
     }
     if (!vf_fecha_registro || !/^\d{4}-\d{2}-\d{2}$/.test(vf_fecha_registro)) {
@@ -346,14 +352,12 @@ const UsuariosView = () => {
     const peso = parseFloat(vf_peso_kg);
     const estatura = parseInt(vf_estatura_cm);
     const cintura = parseFloat(vf_medida_cintura);
-    const cuello = parseFloat(vf_medida_cuello);
     const pecho = vf_medida_pecho ? parseFloat(vf_medida_pecho) : null;
     const cadera = vf_medida_cadera ? parseFloat(vf_medida_cadera) : null;
     
     if (peso < 20 || peso > 300) { setVfFormError('Peso debe estar entre 20 y 300 kg'); return false; }
     if (estatura < 50 || estatura > 250) { setVfFormError('Estatura debe estar entre 50 y 250 cm'); return false; }
     if (cintura < 30 || cintura > 200) { setVfFormError('Cintura debe estar entre 30 y 200 cm'); return false; }
-    if (cuello < 15 || cuello > 60) { setVfFormError('Cuello debe estar entre 15 y 60 cm'); return false; }
     if (pecho && (pecho < 30 || pecho > 200)) { setVfFormError('Pecho debe estar entre 30 y 200 cm'); return false; }
     if (cadera && (cadera < 30 || cadera > 200)) { setVfFormError('Cadera debe estar entre 30 y 200 cm'); return false; }
     
@@ -373,8 +377,6 @@ const UsuariosView = () => {
         vf_medida_pecho: vfFormData.vf_medida_pecho ? parseFloat(vfFormData.vf_medida_pecho) : null,
         vf_medida_cintura: parseFloat(vfFormData.vf_medida_cintura),
         vf_medida_cadera: vfFormData.vf_medida_cadera ? parseFloat(vfFormData.vf_medida_cadera) : null,
-        vf_medida_cuello: parseFloat(vfFormData.vf_medida_cuello),
-        vf_genero: vfFormData.vf_genero,
         vf_observaciones: vfFormData.vf_observaciones.trim() || null,
         vf_fecha_registro: vfFormData.vf_fecha_registro,
       };
@@ -406,8 +408,6 @@ const UsuariosView = () => {
         vf_medida_pecho: '',
         vf_medida_cintura: '',
         vf_medida_cadera: '',
-        vf_medida_cuello: '',
-        vf_genero: 'M',
         vf_observaciones: '',
         vf_fecha_registro: new Date().toISOString().split('T')[0],
       });
@@ -885,14 +885,13 @@ const UsuariosView = () => {
                 <p style={{ fontSize: '0.8rem', color: '#a8a29e', textAlign: 'center', padding: '0.5rem' }}>No hay valoraciones registradas.</p>
               ) : (
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  <table className="data-table" style={{ fontSize: '0.7rem' }}>
+                  <table className="data- " style={{ fontSize: '0.7rem' }}>
                     <thead>
                       <tr>
                         <th style={{ width: '80px' }}>Fecha</th>
                         <th style={{ width: '60px' }}>Peso</th>
                         <th style={{ width: '70px' }}>Estatura</th>
                         <th style={{ width: '80px' }}>Cintura</th>
-                        <th style={{ width: '70px' }}>Cuello</th>
                         <th style={{ width: '70px' }}>Cadera</th>
                         <th style={{ width: '90px' }}>% Grasa</th>
                         <th style={{ width: '50px', textAlign: 'center' }}>Acciones</th>
@@ -905,7 +904,6 @@ const UsuariosView = () => {
                           <td>{vf.vf_peso_kg} kg</td>
                           <td>{vf.vf_estatura_cm} cm</td>
                           <td>{vf.vf_medida_cintura} cm</td>
-                          <td>{vf.vf_medida_cuello} cm</td>
                           <td>{vf.vf_medida_cadera ? `${vf.vf_medida_cadera} cm` : '—'}</td>
                           <td style={{ fontWeight: '700', color: vf.vf_porcentaje_grasa ? '#0369a1' : '#a8a29e' }}>
                             {vf.vf_porcentaje_grasa ? `${vf.vf_porcentaje_grasa}%` : '—'}
@@ -952,7 +950,7 @@ const UsuariosView = () => {
                     justifyContent: 'center'
                   }}>
                     <Calculator size={16} />
-                    % Grasa Corporal Estimada (US Navy): <span style={{ fontSize: '1.1rem' }}>{vfCalculatedGrasa}%</span>
+                    % Grasa Corporal Estimada (RFM): <span style={{ fontSize: '1.1rem' }}>{vfCalculatedGrasa}%</span>
                   </div>
                 )}
 
@@ -978,7 +976,7 @@ const UsuariosView = () => {
                   </div>
                 </div>
 
-                {/* Fila 2: Cintura + Cuello */}
+                {/* Fila 2: Cintura + Cadera */}
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
                     <label>Cintura (cm) * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_medida_cintura)</small></label>
@@ -990,17 +988,19 @@ const UsuariosView = () => {
                     />
                   </div>
                   <div className="admin-form-group">
-                    <label>Cuello (cm) * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_medida_cuello)</small></label>
+                    <label>Cadera (cm) <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_medida_cadera)</small>
+                      {vfUser?.u_genero === 'F' && <span style={{ color: '#dc2626', marginLeft: '0.25rem' }}>*</span>}
+                    </label>
                     <input
-                      type="number" step="0.1" min="15" max="60" className="admin-input"
-                      value={vfFormData.vf_medida_cuello}
-                      onChange={(e) => handleVfInputChange('vf_medida_cuello', e.target.value)}
-                      placeholder="Ej. 38.0" required
+                      type="number" step="0.1" min="30" max="200" className="admin-input"
+                      value={vfFormData.vf_medida_cadera}
+                      onChange={(e) => handleVfInputChange('vf_medida_cadera', e.target.value)}
+                      placeholder="Ej. 95.0"
                     />
                   </div>
                 </div>
 
-                {/* Fila 3: Pecho + Cadera */}
+                {/* Fila 3: Pecho + Fecha */}
                 <div className="admin-grid-2">
                   <div className="admin-form-group">
                     <label>Pecho (cm) <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_medida_pecho)</small></label>
@@ -1012,45 +1012,6 @@ const UsuariosView = () => {
                     />
                   </div>
                   <div className="admin-form-group">
-                    <label>Cadera (cm) <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_medida_cadera)</small>
-                      {vfFormData.vf_genero === 'F' && <span style={{ color: '#dc2626', marginLeft: '0.25rem' }}>*</span>}
-                    </label>
-                    <input
-                      type="number" step="0.1" min="30" max="200" className="admin-input"
-                      value={vfFormData.vf_medida_cadera}
-                      onChange={(e) => handleVfInputChange('vf_medida_cadera', e.target.value)}
-                      placeholder="Ej. 95.0"
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 4: Género + Fecha */}
-                <div className="admin-grid-2">
-                  <div className="admin-form-group">
-                    <label>Género * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_genero)</small></label>
-                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                      {['M', 'F'].map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => handleVfInputChange('vf_genero', g)}
-                          style={{
-                            flex: 1, padding: '0.625rem 1rem',
-                            borderRadius: '0.5rem', cursor: 'pointer',
-                            fontWeight: '700', fontSize: '0.8rem',
-                            border: `2px solid ${vfFormData.vf_genero === g ? '#0369a1' : 'var(--outline-variant)'}`,
-                            background: vfFormData.vf_genero === g ? '#e0f2fe' : '#fff',
-                            color: vfFormData.vf_genero === g ? '#0369a1' : '#78716c',
-                            transition: 'all 0.15s ease',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                          }}
-                        >
-                          {g === 'M' ? '♂ Masculino' : '♀ Femenino'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="admin-form-group">
                     <label>Fecha Registro * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(vf_fecha_registro)</small></label>
                     <input
                       type="date" className="admin-input"
@@ -1059,6 +1020,13 @@ const UsuariosView = () => {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Info: Género del usuario (se toma del perfil) */}
+                <div style={{ padding: '0.5rem', background: '#f5f5f4', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#57534e' }}>
+                  <strong>Género del usuario: </strong>
+                  {vfUser?.u_genero === 'M' ? '♂ Masculino' : vfUser?.u_genero === 'F' ? '♀ Femenino' : 
+                    <span style={{ color: '#dc2626' }}>No definido (requerido para calcular % grasa)</span>}
                 </div>
 
                 {/* Observaciones */}
@@ -1080,13 +1048,251 @@ const UsuariosView = () => {
                 <button type="button" className="btn-secondary" onClick={handleCloseVFModal} disabled={vfSaving}>
                   Cancelar
                 </button>
-                <button type="button" className="btn-secondary" onClick={() => { setVfEditing(null); setVfFormData({ vf_peso_kg: '', vf_estatura_cm: '', vf_medida_pecho: '', vf_medida_cintura: '', vf_medida_cadera: '', vf_medida_cuello: '', vf_genero: 'M', vf_observaciones: '', vf_fecha_registro: new Date().toISOString().split('T')[0] }); setVfCalculatedGrasa(null); }} disabled={vfSaving || !vfEditing}>
+                <button type="button" className="btn-secondary" onClick={() => { setVfEditing(null); setVfFormData({ vf_peso_kg: '', vf_estatura_cm: '', vf_medida_pecho: '', vf_medida_cintura: '', vf_medida_cadera: '', vf_observaciones: '', vf_fecha_registro: new Date().toISOString().split('T')[0] }); setVfCalculatedGrasa(null); }} disabled={vfSaving || !vfEditing}>
                   Nueva Valoración
                 </button>
                 <button type="submit" className="btn-primary" disabled={vfSaving} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
                   {vfSaving
                     ? (<><div style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Guardando...</>)
                     : (vfEditing ? 'Actualizar Valoración' : 'Registrar Valoración')
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* ── Modal Crear / Editar Usuario ─────────────────────────────────────────── */}
+      {showModal && (
+        <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && handleCloseModal()}>
+          <div className="admin-modal-container" style={{ maxWidth: '560px' }}>
+            {/* Header */}
+            <div className="admin-modal-header">
+              <div>
+                <h3 style={{ margin: 0 }}>
+                  {editingUser ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.2rem' }}>
+                  {editingUser
+                    ? `Editando: ${editingUser.u_nombres} ${editingUser.u_apellidos} · ID: ${editingUser.u_id}`
+                    : 'Todos los campos marcados con * son obligatorios.'}
+                </p>
+              </div>
+              <button className="btn-icon" onClick={handleCloseModal} disabled={saving}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleSave}>
+              <div className="admin-modal-body">
+                {/* Error */}
+                {formError && (
+                  <div style={{
+                    padding: '0.75rem 1rem', background: '#fef2f2', border: '1px solid #fecaca',
+                    borderRadius: '0.5rem', color: '#dc2626', fontSize: '0.8rem',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem',
+                  }}>
+                    <AlertCircle size={15} />
+                    {formError}
+                  </div>
+                )}
+
+                {/* Nombres + Apellidos */}
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Nombres * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_nombres)</small></label>
+                    <input
+                      type="text" maxLength={35} className="admin-input"
+                      value={formData.u_nombres}
+                      onChange={(e) => setFormData({ ...formData, u_nombres: e.target.value })}
+                      placeholder="Ej. Laura" required autoFocus
+                    />
+                  </div>
+                  <div className="admin-form-group">
+                    <label>Apellidos * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_apellidos)</small></label>
+                    <input
+                      type="text" maxLength={35} className="admin-input"
+                      value={formData.u_apellidos}
+                      onChange={(e) => setFormData({ ...formData, u_apellidos: e.target.value })}
+                      placeholder="Ej. Gómez" required
+                    />
+                  </div>
+                </div>
+
+                {/* Tipo Documento + Número Documento */}
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Tipo Doc. <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_td_id)</small></label>
+                    <select className="admin-select" value={formData.u_td_id}
+                      onChange={(e) => {
+                        const newType = parseInt(e.target.value) || 1;
+                        setFormData({
+                          ...formData,
+                          u_td_id: newType,
+                          u_numero_documento: sanitizeDocumentInput(newType, formData.u_numero_documento)
+                        });
+                      }}>
+                      {TIPOS_DOC.map((t) => (
+                        <option key={t.id} value={t.id}>{t.id} — {t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="admin-form-group">
+                    <label>N° Documento <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_numero_documento)</small></label>
+                    <input
+                      type="text" className="admin-input"
+                      value={formData.u_numero_documento}
+                      onChange={(e) => setFormData({ ...formData, u_numero_documento: sanitizeDocumentInput(formData.u_td_id, e.target.value) })}
+                      placeholder={
+                        Number(formData.u_td_id) === 1 ? "Ej. 1020304050 (10 dígitos)" :
+                        Number(formData.u_td_id) === 2 ? "Ej. 123456 (6 ó 7 dígitos)" :
+                        Number(formData.u_td_id) === 4 ? "Ej. 1098765432 (10 dígitos)" : "Ej. AB123456"
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Correo */}
+                <div className="admin-form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Mail size={12} /> Correo Electrónico * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_correo_electronico)</small>
+                  </label>
+                  <input
+                    type="email" maxLength={100} className="admin-input"
+                    value={formData.u_correo_electronico}
+                    onChange={(e) => setFormData({ ...formData, u_correo_electronico: e.target.value })}
+                    placeholder="usuario@ejemplo.com" required
+                  />
+                </div>
+
+                {/* Contraseña — solo al crear */}
+                {!editingUser && (
+                  <div className="admin-form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Key size={12} /> Contraseña * <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_contrasena)</small>
+                    </label>
+                    <input
+                      type="password" className="admin-input"
+                      value={formData.u_contrasena}
+                      onChange={(e) => setFormData({ ...formData, u_contrasena: e.target.value })}
+                      placeholder="Mínimo 8 caracteres" required
+                    />
+                    <PasswordStrengthMeter password={formData.u_contrasena} />
+                  </div>
+                )}
+
+                {/* Rol + Contacto */}
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Shield size={12} /> Rol del Sistema <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_r_id)</small>
+                    </label>
+                    <select className="admin-select" value={formData.u_r_id}
+                      onChange={(e) => setFormData({ ...formData, u_r_id: parseInt(e.target.value) || 1 })}>
+                      {ROLES.map((r) => (
+                        <option key={r.id} value={r.id}>{r.id} — {r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="admin-form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Phone size={12} /> N° Contacto <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_numero_contacto)</small>
+                    </label>
+                    <input
+                      type="text" className="admin-input" maxLength={10}
+                      value={formData.u_numero_contacto}
+                      onChange={(e) => setFormData({ ...formData, u_numero_contacto: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      placeholder="Ej. 3001234567"
+                    />
+                  </div>
+                </div>
+
+                {/* Género + Estado general */}
+                <div className="admin-grid-2">
+                  <div className="admin-form-group">
+                    <label>Género <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_genero)</small></label>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                      {['M', 'F'].map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, u_genero: g })}
+                          style={{
+                            flex: 1, padding: '0.625rem 1rem',
+                            borderRadius: '0.5rem', cursor: 'pointer',
+                            fontWeight: '700', fontSize: '0.8rem',
+                            border: `2px solid ${formData.u_genero === g ? '#0369a1' : 'var(--outline-variant)'}`,
+                            background: formData.u_genero === g ? '#e0f2fe' : '#fff',
+                            color: formData.u_genero === g ? '#0369a1' : '#78716c',
+                            transition: 'all 0.15s ease',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                          }}
+                        >
+                          {g === 'M' ? '♂ Masculino' : '♀ Femenino'}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, u_genero: '' })}
+                        style={{
+                          flex: 1, padding: '0.625rem 1rem',
+                          borderRadius: '0.5rem', cursor: 'pointer',
+                          fontWeight: '700', fontSize: '0.8rem',
+                          border: `2px solid ${formData.u_genero === '' ? '#0369a1' : 'var(--outline-variant)'}`,
+                          background: formData.u_genero === '' ? '#e0f2fe' : '#fff',
+                          color: formData.u_genero === '' ? '#0369a1' : '#78716c',
+                          transition: 'all 0.15s ease',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                        }}
+                      >
+                        No especificado
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Estado general */}
+                  <div className="admin-form-group">
+                    <label>Estado General <small style={{ color: '#a8a29e', fontWeight: 400 }}>(u_eg_id)</small></label>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                      {ESTADOS.map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, u_eg_id: e.id })}
+                          style={{
+                            flex: 1, padding: '0.625rem 1rem',
+                            borderRadius: '0.5rem', cursor: 'pointer',
+                            fontWeight: '700', fontSize: '0.8rem',
+                            border: `2px solid ${formData.u_eg_id === e.id
+                              ? (e.id === 1 ? '#16a34a' : '#dc2626')
+                              : 'var(--outline-variant)'}`,
+                            background: formData.u_eg_id === e.id
+                              ? (e.id === 1 ? '#f0fdf4' : '#fef2f2')
+                              : '#fff',
+                            color: formData.u_eg_id === e.id
+                              ? (e.id === 1 ? '#16a34a' : '#dc2626')
+                              : '#78716c',
+                            transition: 'all 0.15s ease',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                          }}
+                        >
+                          {e.id === 1 ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
+                          {e.id} — {e.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="admin-modal-footer">
+                <button type="button" className="btn-secondary" onClick={handleCloseModal} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {saving
+                    ? (<><div style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Guardando...</>)
+                    : (editingUser ? 'Guardar Cambios' : 'Crear Usuario')
                   }
                 </button>
               </div>

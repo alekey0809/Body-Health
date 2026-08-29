@@ -13,8 +13,6 @@ CREATE TABLE IF NOT EXISTS valoracion_fisica (
     vf_medida_pecho           NUMERIC(5,2),
     vf_medida_cintura         NUMERIC(5,2) NOT NULL,
     vf_medida_cadera          NUMERIC(5,2),
-    vf_medida_cuello          NUMERIC(5,2) NOT NULL,
-    vf_genero                 VARCHAR(1) NOT NULL CHECK (vf_genero IN ('M', 'F')),
     vf_porcentaje_grasa       NUMERIC(5,2),
     vf_observaciones          TEXT,
     vf_fecha_creacion         TIMESTAMP NOT NULL DEFAULT NOW()
@@ -48,5 +46,15 @@ BEGIN
     -- Add vf_fecha_creacion if missing
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'valoracion_fisica' AND column_name = 'vf_fecha_creacion') THEN
         ALTER TABLE valoracion_fisica ADD COLUMN vf_fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW();
+    END IF;
+    
+    -- Drop vf_medida_cuello if exists (ya no se usa)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'valoracion_fisica' AND column_name = 'vf_medida_cuello') THEN
+        ALTER TABLE valoracion_fisica DROP COLUMN vf_medida_cuello;
+    END IF;
+    
+    -- Drop vf_genero if exists (se usa u_genero de la tabla usuario)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'valoracion_fisica' AND column_name = 'vf_genero') THEN
+        ALTER TABLE valoracion_fisica DROP COLUMN vf_genero;
     END IF;
 END $$;

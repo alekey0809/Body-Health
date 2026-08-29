@@ -1,87 +1,93 @@
 import { pool } from '../config/db.js';
 
 export const ValoracionFisicaModel = {
-    // Calcular porcentaje de grasa usando fórmula US Navy
-    // Hombres: %Fat = 495 / (1.0324 - 0.19077 * log10(cintura - cuello) + 0.15456 * log10(altura)) - 450
-    // Mujeres: %Fat = 495 / (1.29579 - 0.35004 * log10(cintura + cadera - cuello) + 0.22100 * log10(altura)) - 450
-    calcularPorcentajeGrasa: ({ genero, estaturaCm, medidaCintura, medidaCadera, medidaCuello }) => {
+    // Obtener género del usuario desde la tabla usuario
+    getUserGenero: async (userId) => {
+        const query = `SELECT u_genero FROM usuario WHERE u_id = $1`;
+        const { rows } = await pool.query(query, [userId]);
+        return rows[0]?.u_genero || null;
+    },
+
+    // Calcular porcentaje de grasa usando fórmula RFM (Relative Fat Mass)
+    // Woolcott & Bergman 2018 - sin necesidad de medida de cuello
+    // Hombres: RFM = 64 - (20 * altura / cintura)
+    // Mujeres: RFM = 76 - (20 * altura / cintura)
+    calcularPorcentajeGrasa: ({ genero, estaturaCm, medidaCintura }) => {
         const altura = estaturaCm;
         const cintura = medidaCintura;
-        const cuello = medidaCuello;
+        
+        if (!altura || !cintura || cintura <= 0) return null;
         
         if (genero === 'M') {
-            // Fórmula para hombres
-            const valor = cintura - cuello;
-            if (valor <= 0) return null;
-            const logCinturaCuello = Math.log10(valor);
-            const logAltura = Math.log10(altura);
-            const denominador = 1.0324 - 0.19077 * logCinturaCuello + 0.15456 * logAltura;
-            if (denominador <= 0) return null;
-            return Math.round((495 / denominador - 450) * 100) / 100;
+            const rfm = 64 - (20 * altura / cintura);
+            return Math.round(Math.max(0, Math.min(100, rfm)) * 100) / 100;
         } else if (genero === 'F') {
-            // Fórmula para mujeres (requiere cadera)
-            if (!medidaCadera || medidaCadera <= 0) return null;
-            const valor = cintura + medidaCadera - cuello;
-            if (valor <= 0) return null;
-            const logCinturaCaderaCuello = Math.log10(valor);
-            const logAltura = Math.log10(altura);
-            const denominador = 1.29579 - 0.35004 * logCinturaCaderaCuello + 0.22100 * logAltura;
-            if (denominador <= 0) return null;
-            return Math.round((495 / denominador - 450) * 100) / 100;
+            const rfm = 76 - (20 * altura / cintura);
+            return Math.round(Math.max(0, Math.min(100, rfm)) * 100) / 100;
         }
         return null;
     },
 
-    // Obtener todas las valoraciones de un usuario
+    // Obtener todas las valoraciones de un usuario (incluye género del usuario)
     getByUserId: async (userId) => {
         const query = `
-            SELECT vf_id, vf_u_id, vf_fecha_registro, vf_peso_kg, vf_estatura_cm,
-                   vf_medida_pecho, vf_medida_cintura, vf_medida_cadera, vf_medida_cuello,
-                   vf_genero, vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
-            FROM valoracion_fisica
-            WHERE vf_u_id = $1
-            ORDER BY vf_fecha_registro DESC, vf_fecha_creacion DESC
+            SELECT 
+                vf.vf_id, vf.vf_u_id, vf.vf_fecha_registro, vf.vf_peso_kg, vf.vf_estatura_cm,
+                vf.vf_medida_pecho, vf.vf_medida_cintura, vf.vf_medida_cadera,
+                vf.vf_porcentaje_grasa, vf.vf_observaciones, vf.vf_fecha_creacion,
+                u.u_genero
+            FROM valoracion_fisica vf
+            LEFT JOIN usuario u ON vf.vf_u_id = u.u_id
+            WHERE vf.vf_u_id = $1
+            ORDER BY vf.vf_fecha_registro DESC, vf.vf_fecha_creacion DESC
         `;
         const { rows } = await pool.query(query, [userId]);
         return rows;
     },
 
-    // Obtener una valoración por ID
+    // Obtener una valoración por ID (incluye género del usuario)
     getById: async (id) => {
         const query = `
-            SELECT vf_id, vf_u_id, vf_fecha_registro, vf_peso_kg, vf_estatura_cm,
-                   vf_medida_pecho, vf_medida_cintura, vf_medida_cadera, vf_medida_cuello,
-                   vf_genero, vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
-            FROM valoracion_fisica
-            WHERE vf_id = $1
+            SELECT 
+                vf.vf_id, vf.vf_u_id, vf.vf_fecha_registro, vf.vf_peso_kg, vf.vf_estatura_cm,
+                vf.vf_medida_pecho, vf.vf_medida_cintura, vf.vf_medida_cadera,
+                vf.vf_porcentaje_grasa, vf.vf_observaciones, vf.vf_fecha_creacion,
+                u.u_genero
+            FROM valoracion_fisica vf
+            LEFT JOIN usuario u ON vf.vf_u_id = u.u_id
+            WHERE vf.vf_id = $1
         `;
         const { rows } = await pool.query(query, [id]);
         return rows[0];
     },
 
-    // Crear nueva valoración física
+    // Crear nueva valoración física (calcula % grasa usando u_genero del usuario)
     create: async ({ vf_u_id, vf_peso_kg, vf_estatura_cm, vf_medida_pecho, vf_medida_cintura, 
-                      vf_medida_cadera, vf_medida_cuello, vf_genero, vf_observaciones, vf_fecha_registro }) => {
+                      vf_medida_cadera, vf_observaciones, vf_fecha_registro }) => {
         
+        // Obtener género del usuario
+        const genero = await ValoracionFisicaModel.getUserGenero(vf_u_id);
+        if (!genero) {
+            throw new Error('El usuario no tiene género definido (u_genero). Actualice el perfil del usuario.');
+        }
+
         // Calcular porcentaje de grasa
         const vf_porcentaje_grasa = ValoracionFisicaModel.calcularPorcentajeGrasa({
-            genero: vf_genero,
+            genero,
             estaturaCm: vf_estatura_cm,
-            medidaCintura: vf_medida_cintura,
-            medidaCadera: vf_medida_cadera,
-            medidaCuello: vf_medida_cuello
+            medidaCintura: vf_medida_cintura
         });
 
         const query = `
             INSERT INTO valoracion_fisica (
                 vf_u_id, vf_fecha_registro, vf_peso_kg, vf_estatura_cm,
-                vf_medida_pecho, vf_medida_cintura, vf_medida_cadera, vf_medida_cuello,
-                vf_genero, vf_porcentaje_grasa, vf_observaciones
+                vf_medida_pecho, vf_medida_cintura, vf_medida_cadera,
+                vf_porcentaje_grasa, vf_observaciones
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING vf_id, vf_u_id, vf_fecha_registro, vf_peso_kg, vf_estatura_cm,
-                      vf_medida_pecho, vf_medida_cintura, vf_medida_cadera, vf_medida_cuello,
-                      vf_genero, vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
+                      vf_medida_pecho, vf_medida_cintura, vf_medida_cadera,
+                      vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
         `;
 
         const values = [
@@ -92,27 +98,36 @@ export const ValoracionFisicaModel = {
             vf_medida_pecho || null,
             vf_medida_cintura,
             vf_medida_cadera || null,
-            vf_medida_cuello,
-            vf_genero,
             vf_porcentaje_grasa,
             vf_observaciones || null
         ];
 
         const { rows } = await pool.query(query, values);
-        return rows[0];
+        
+        // Agregar género del usuario al resultado
+        const result = rows[0];
+        result.u_genero = genero;
+        return result;
     },
 
-    // Actualizar valoración física
+    // Actualizar valoración física (recalcula % grasa usando u_genero del usuario)
     update: async (id, { vf_peso_kg, vf_estatura_cm, vf_medida_pecho, vf_medida_cintura,
-                          vf_medida_cadera, vf_medida_cuello, vf_genero, vf_observaciones, vf_fecha_registro }) => {
+                          vf_medida_cadera, vf_observaciones, vf_fecha_registro }) => {
         
+        // Obtener la valoración actual para saber el usuario
+        const current = await ValoracionFisicaModel.getById(id);
+        if (!current) return null;
+        
+        const genero = current.u_genero;
+        if (!genero) {
+            throw new Error('El usuario no tiene género definido (u_genero).');
+        }
+
         // Calcular porcentaje de grasa
         const vf_porcentaje_grasa = ValoracionFisicaModel.calcularPorcentajeGrasa({
-            genero: vf_genero,
+            genero,
             estaturaCm: vf_estatura_cm,
-            medidaCintura: vf_medida_cintura,
-            medidaCadera: vf_medida_cadera,
-            medidaCuello: vf_medida_cuello
+            medidaCintura: vf_medida_cintura
         });
 
         const query = `
@@ -122,15 +137,13 @@ export const ValoracionFisicaModel = {
                 vf_medida_pecho = $3,
                 vf_medida_cintura = $4,
                 vf_medida_cadera = $5,
-                vf_medida_cuello = $6,
-                vf_genero = $7,
-                vf_porcentaje_grasa = $8,
-                vf_observaciones = $9,
-                vf_fecha_registro = $10
-            WHERE vf_id = $11
+                vf_porcentaje_grasa = $6,
+                vf_observaciones = $7,
+                vf_fecha_registro = $8
+            WHERE vf_id = $9
             RETURNING vf_id, vf_u_id, vf_fecha_registro, vf_peso_kg, vf_estatura_cm,
-                      vf_medida_pecho, vf_medida_cintura, vf_medida_cadera, vf_medida_cuello,
-                      vf_genero, vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
+                      vf_medida_pecho, vf_medida_cintura, vf_medida_cadera,
+                      vf_porcentaje_grasa, vf_observaciones, vf_fecha_creacion
         `;
 
         const values = [
@@ -139,8 +152,6 @@ export const ValoracionFisicaModel = {
             vf_medida_pecho || null,
             vf_medida_cintura,
             vf_medida_cadera || null,
-            vf_medida_cuello,
-            vf_genero,
             vf_porcentaje_grasa,
             vf_observaciones || null,
             vf_fecha_registro || new Date().toISOString().split('T')[0],
@@ -148,7 +159,11 @@ export const ValoracionFisicaModel = {
         ];
 
         const { rows } = await pool.query(query, values);
-        return rows[0];
+        
+        // Agregar género del usuario al resultado
+        const result = rows[0];
+        result.u_genero = genero;
+        return result;
     },
 
     // Eliminar valoración física

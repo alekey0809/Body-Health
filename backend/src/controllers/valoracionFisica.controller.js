@@ -29,8 +29,7 @@ export const createValoracion = async (req, res) => {
     try {
         const { 
             vf_u_id, vf_peso_kg, vf_estatura_cm, vf_medida_pecho, 
-            vf_medida_cintura, vf_medida_cadera, vf_medida_cuello, 
-            vf_genero, vf_observaciones, vf_fecha_registro 
+            vf_medida_cintura, vf_medida_cadera, vf_observaciones, vf_fecha_registro 
         } = req.body;
 
         // Validaciones requeridas
@@ -46,18 +45,17 @@ export const createValoracion = async (req, res) => {
         if (!vf_medida_cintura || isNaN(parseFloat(vf_medida_cintura))) {
             return res.status(400).json({ ok: false, message: 'La medida de cintura (vf_medida_cintura) es requerida y debe ser numérica' });
         }
-        if (!vf_medida_cuello || isNaN(parseFloat(vf_medida_cuello))) {
-            return res.status(400).json({ ok: false, message: 'La medida de cuello (vf_medida_cuello) es requerida y debe ser numérica' });
-        }
-        if (!vf_genero || !['M', 'F'].includes(vf_genero)) {
-            return res.status(400).json({ ok: false, message: 'El género (vf_genero) es requerido y debe ser "M" o "F"' });
+
+        // Verificar que el usuario tenga género definido
+        const genero = await ValoracionFisicaModel.getUserGenero(vf_u_id);
+        if (!genero) {
+            return res.status(400).json({ ok: false, message: 'El usuario no tiene género definido. Actualice el perfil del usuario (u_genero: M o F).' });
         }
 
         // Validar rangos razonables
         const peso = parseFloat(vf_peso_kg);
         const estatura = parseInt(vf_estatura_cm);
         const cintura = parseFloat(vf_medida_cintura);
-        const cuello = parseFloat(vf_medida_cuello);
         const pecho = vf_medida_pecho ? parseFloat(vf_medida_pecho) : null;
         const cadera = vf_medida_cadera ? parseFloat(vf_medida_cadera) : null;
 
@@ -69,9 +67,6 @@ export const createValoracion = async (req, res) => {
         }
         if (cintura < 30 || cintura > 200) {
             return res.status(400).json({ ok: false, message: 'La medida de cintura debe estar entre 30 y 200 cm' });
-        }
-        if (cuello < 15 || cuello > 60) {
-            return res.status(400).json({ ok: false, message: 'La medida de cuello debe estar entre 15 y 60 cm' });
         }
         if (pecho && (pecho < 30 || pecho > 200)) {
             return res.status(400).json({ ok: false, message: 'La medida de pecho debe estar entre 30 y 200 cm' });
@@ -94,8 +89,6 @@ export const createValoracion = async (req, res) => {
             vf_medida_pecho: pecho,
             vf_medida_cintura: cintura,
             vf_medida_cadera: cadera,
-            vf_medida_cuello: cuello,
-            vf_genero,
             vf_observaciones: vf_observaciones?.trim() || null,
             vf_fecha_registro: fechaRegistro
         });
@@ -107,7 +100,7 @@ export const createValoracion = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al crear valoración física:', error);
-        return res.status(500).json({ ok: false, message: 'Error al crear valoración física', error: error.message });
+        return res.status(500).json({ ok: false, message: error.message || 'Error al crear valoración física', error: error.message });
     }
 };
 
@@ -116,8 +109,7 @@ export const updateValoracion = async (req, res) => {
     try {
         const { 
             vf_peso_kg, vf_estatura_cm, vf_medida_pecho, 
-            vf_medida_cintura, vf_medida_cadera, vf_medida_cuello, 
-            vf_genero, vf_observaciones, vf_fecha_registro 
+            vf_medida_cintura, vf_medida_cadera, vf_observaciones, vf_fecha_registro 
         } = req.body;
 
         // Validaciones
@@ -130,17 +122,10 @@ export const updateValoracion = async (req, res) => {
         if (!vf_medida_cintura || isNaN(parseFloat(vf_medida_cintura))) {
             return res.status(400).json({ ok: false, message: 'La medida de cintura (vf_medida_cintura) es requerida y debe ser numérica' });
         }
-        if (!vf_medida_cuello || isNaN(parseFloat(vf_medida_cuello))) {
-            return res.status(400).json({ ok: false, message: 'La medida de cuello (vf_medida_cuello) es requerida y debe ser numérica' });
-        }
-        if (!vf_genero || !['M', 'F'].includes(vf_genero)) {
-            return res.status(400).json({ ok: false, message: 'El género (vf_genero) es requerido y debe ser "M" o "F"' });
-        }
 
         const peso = parseFloat(vf_peso_kg);
         const estatura = parseInt(vf_estatura_cm);
         const cintura = parseFloat(vf_medida_cintura);
-        const cuello = parseFloat(vf_medida_cuello);
         const pecho = vf_medida_pecho ? parseFloat(vf_medida_pecho) : null;
         const cadera = vf_medida_cadera ? parseFloat(vf_medida_cadera) : null;
 
@@ -152,9 +137,6 @@ export const updateValoracion = async (req, res) => {
         }
         if (cintura < 30 || cintura > 200) {
             return res.status(400).json({ ok: false, message: 'La medida de cintura debe estar entre 30 y 200 cm' });
-        }
-        if (cuello < 15 || cuello > 60) {
-            return res.status(400).json({ ok: false, message: 'La medida de cuello debe estar entre 15 y 60 cm' });
         }
         if (pecho && (pecho < 30 || pecho > 200)) {
             return res.status(400).json({ ok: false, message: 'La medida de pecho debe estar entre 30 y 200 cm' });
@@ -175,8 +157,6 @@ export const updateValoracion = async (req, res) => {
             vf_medida_pecho: pecho,
             vf_medida_cintura: cintura,
             vf_medida_cadera: cadera,
-            vf_medida_cuello: cuello,
-            vf_genero,
             vf_observaciones: vf_observaciones?.trim() || null,
             vf_fecha_registro: fechaRegistro
         });
@@ -192,7 +172,7 @@ export const updateValoracion = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al actualizar valoración física:', error);
-        return res.status(500).json({ ok: false, message: 'Error al actualizar valoración física', error: error.message });
+        return res.status(500).json({ ok: false, message: error.message || 'Error al actualizar valoración física', error: error.message });
     }
 };
 
@@ -211,12 +191,13 @@ export const deleteValoracion = async (req, res) => {
 };
 
 // Endpoint para calcular porcentaje de grasa en el frontend (previsualización)
+// Usa u_genero del usuario autenticado o pasado por body
 export const calcularPorcentajeGrasa = async (req, res) => {
     try {
-        const { genero, estatura_cm, medida_cintura, medida_cadera, medida_cuello } = req.body;
+        const { userId, estatura_cm, medida_cintura } = req.body;
 
-        if (!genero || !['M', 'F'].includes(genero)) {
-            return res.status(400).json({ ok: false, message: 'Género requerido: M o F' });
+        if (!userId) {
+            return res.status(400).json({ ok: false, message: 'userId es requerido para obtener el género del usuario' });
         }
         if (!estatura_cm || isNaN(parseInt(estatura_cm))) {
             return res.status(400).json({ ok: false, message: 'Estatura requerida (entero en cm)' });
@@ -224,26 +205,23 @@ export const calcularPorcentajeGrasa = async (req, res) => {
         if (!medida_cintura || isNaN(parseFloat(medida_cintura))) {
             return res.status(400).json({ ok: false, message: 'Medida de cintura requerida (numérico)' });
         }
-        if (!medida_cuello || isNaN(parseFloat(medida_cuello))) {
-            return res.status(400).json({ ok: false, message: 'Medida de cuello requerida (numérico)' });
-        }
-        if (genero === 'F' && (!medida_cadera || isNaN(parseFloat(medida_cadera)))) {
-            return res.status(400).json({ ok: false, message: 'Medida de cadera requerida para mujeres (numérico)' });
+
+        const genero = await ValoracionFisicaModel.getUserGenero(userId);
+        if (!genero) {
+            return res.status(400).json({ ok: false, message: 'El usuario no tiene género definido (u_genero)' });
         }
 
         const porcentaje = ValoracionFisicaModel.calcularPorcentajeGrasa({
             genero,
             estaturaCm: parseInt(estatura_cm),
-            medidaCintura: parseFloat(medida_cintura),
-            medidaCadera: medida_cadera ? parseFloat(medida_cadera) : null,
-            medidaCuello: parseFloat(medida_cuello)
+            medidaCintura: parseFloat(medida_cintura)
         });
 
         if (porcentaje === null) {
-            return res.status(400).json({ ok: false, message: 'No se pudo calcular el porcentaje. Verifique las medidas (cintura > cuello, etc.)' });
+            return res.status(400).json({ ok: false, message: 'No se pudo calcular el porcentaje. Verifique las medidas.' });
         }
 
-        return res.json({ ok: true, porcentaje_grasa: porcentaje });
+        return res.json({ ok: true, porcentaje_grasa: porcentaje, genero });
     } catch (error) {
         console.error('Error al calcular porcentaje de grasa:', error);
         return res.status(500).json({ ok: false, message: 'Error al calcular porcentaje de grasa', error: error.message });

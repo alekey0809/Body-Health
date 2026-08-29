@@ -49,7 +49,7 @@ export const createUsuario = async ({
 /**
  * Actualiza un usuario existente (endpoint de admin).
  * El modelo updateAdmin espera: nombres, apellidos, idTipoDoc,
- * numeroDoc, correo, idRol, contacto, idEstadoGen
+ * numeroDoc, correo, idRol, contacto, idEstadoGen, genero
  */
 export const updateUsuarioAdmin = async (id, {
   u_nombres,
@@ -60,6 +60,7 @@ export const updateUsuarioAdmin = async (id, {
   u_r_id,
   u_numero_contacto,
   u_eg_id,
+  u_genero,
 }) => {
   const response = await api.put(`/api/users/${id}`, {
     nombres: u_nombres,
@@ -70,6 +71,7 @@ export const updateUsuarioAdmin = async (id, {
     idRol: u_r_id,
     contacto: u_numero_contacto || null,
     idEstadoGen: u_eg_id,
+    genero: u_genero,
   });
   return response.data?.user ?? response.data;
 };
