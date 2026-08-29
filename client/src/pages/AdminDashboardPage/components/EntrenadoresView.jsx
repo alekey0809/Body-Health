@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash, FileText, FileSpreadsheet, Eye, Calculator, ArrowUpRight, ArrowDownRight, CreditCard, Receipt } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Star, X, AlertCircle, RefreshCw, DollarSign, Clock, Hash, FileText, FileSpreadsheet, Calculator, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Plus, Calendar, Save, Loader2, Settings } from 'lucide-react';
 import {
   getEntrenadores,
   getUsuariosDisponiblesParaEntrenador,
@@ -9,6 +9,14 @@ import {
   getSalarioHistorial,
 } from '../../../services/entrenadorService';
 import { exportToPDF, exportToExcel } from '../../../utils/exportUtils';
+import {
+  getHistorialSueldos,
+  getResumenSueldosEntrenadores,
+  getHistorialSueldoByTrainer,
+  createHistorialSueldo,
+  updateHistorialSueldo,
+  deleteHistorialSueldo,
+} from '../../../services/historialSueldoService';
 
 // ─── Formulario vacío base ────────────────────────────────────────────────────
 const EMPTY_FORM = {
@@ -80,6 +88,18 @@ const EntrenadoresView = () => {
   const [deleting, setDeleting] = useState(null);
   const [toast, setToast] = useState(null);
   const [viewMode, setViewMode] = useState('trainers');
+
+  // ── Estados para modal de pagos ─────────────────────────────────────────────
+  const [paymentDetail, setPaymentDetail] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentFormData, setPaymentFormData] = useState({
+    hs_en_u_id: '',
+    hs_monto_pagado: '',
+    hs_fecha_pago: '',
+    hs_periodo_correspondiente: '',
+  });
+  const [paymentFormError, setPaymentFormError] = useState('');
+  const [paymentSaving, setPaymentSaving] = useState(false);
 
   // ── Columnas para exportación ────────────────────────────────────────────────
   const exportColumns = [
@@ -256,14 +276,84 @@ const EntrenadoresView = () => {
   };
 
   // ── Ver detalle de pagos ───────────────────────────────────────────────────
-  const [paymentDetail, setPaymentDetail] = useState(null);
-
   const showPaymentDetail = (trainer) => {
     setPaymentDetail(trainer);
   };
 
   const handleClosePaymentDetail = () => {
     setPaymentDetail(null);
+  };
+
+  // ── Modal Registrar Pago ─────────────────────────────────────────────────────
+  const handleOpenPaymentModal = (trainer) => {
+    setPaymentDetail(trainer);
+    setPaymentFormData({
+      hs_en_u_id: trainer.en_u_id,
+      hs_monto_pagado: '',
+      hs_fecha_pago: new Date().toISOString().slice(0, 16), // formato datetime-local
+      hs_periodo_correspondiente: new Date().toISOString().slice(0, 7), // formato YYYY-MM
+    });
+    setPaymentFormError('');
+    setShowPaymentModal(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    if (paymentSaving) return;
+    setShowPaymentModal(false);
+    setPaymentFormData({
+      hs_en_u_id: '',
+      hs_monto_pagado: '',
+      hs_fecha_pago: '',
+      hs_periodo_correspondiente: '',
+    });
+    setPaymentFormError('');
+  };
+
+  const validatePaymentForm = () => {
+    if (!paymentFormData.hs_monto_pagado || parseFloat(paymentFormData.hs_monto_pagado) <= 0) {
+      setPaymentFormError('El monto pagado debe ser un valor mayor a 0.');
+      return false;
+    }
+    if (!paymentFormData.hs_fecha_pago) {
+      setPaymentFormError('La fecha de pago es obligatoria.');
+      return false;
+    }
+    if (!paymentFormData.hs_periodo_correspondiente) {
+      setPaymentFormError('El período correspondiente es obligatorio (formato YYYY-MM).');
+      return false;
+    }
+    setPaymentFormError('');
+    return true;
+  };
+
+  const handleSavePayment = async (e) => {
+    e.preventDefault();
+    if (!validatePaymentForm()) return;
+    setPaymentSaving(true);
+    try {
+      const payload = {
+        hs_en_u_id: paymentFormData.hs_en_u_id,
+        hs_monto_pagado: parseFloat(paymentFormData.hs_monto_pagado),
+        hs_fecha_pago: paymentFormData.hs_fecha_pago,
+        hs_periodo_correspondiente: paymentFormData.hs_periodo_correspondiente,
+      };
+      await createHistorialSueldo(payload);
+      showToast('Pago de sueldo registrado correctamente.', 'success');
+      // Recargar historial de sueldos
+      fetchSalarioHistorial();
+      // Recargar detalle si está abierto
+      if (paymentDetail) {
+        const updated = await getHistorialSueldoByTrainer(paymentDetail.en_u_id);
+        setPaymentDetail(updated);
+      }
+      handleClosePaymentModal();
+    } catch (err) {
+      console.error('Error al registrar pago:', err);
+      const msg = err?.response?.data?.message || 'Error al registrar el pago de sueldo.';
+      setPaymentFormError(msg);
+    } finally {
+      setPaymentSaving(false);
+    }
   };
 
   // ── Filtrar entrenadores ──────────────────────────────────────────────────
@@ -749,7 +839,7 @@ const EntrenadoresView = () => {
                   <th>Contratación</th>
                   <th style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                      <Eye size={13} /> Detalle
+                      <Plus size={13} /> Agregar
                     </div>
                   </th>
                 </tr>
@@ -830,9 +920,9 @@ const EntrenadoresView = () => {
                           <button
                             className="btn-icon"
                             onClick={() => showPaymentDetail(t)}
-                            title="Ver detalle de pagos"
+                            title="Agregar pagos"
                           >
-                            <Eye size={17} />
+                            <Plus size={17} />
                           </button>
                         </td>
                       </tr>
@@ -1017,9 +1107,18 @@ const EntrenadoresView = () => {
                   {paymentDetail.u_nombres} {paymentDetail.u_apellidos} — Sueldo Base: ${Number(paymentDetail.en_sueldo_base || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <button className="btn-icon" onClick={handleClosePaymentDetail}>
-                <X size={20} />
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="btn-primary"
+                  onClick={() => handleOpenPaymentModal(paymentDetail)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                >
+                  <Settings size={14} /> Registrar Pago
+                </button>
+                <button className="btn-icon" onClick={handleClosePaymentDetail}>
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <div className="admin-modal-body" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
@@ -1109,6 +1208,109 @@ const EntrenadoresView = () => {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Registrar Pago de Sueldo ────────────────────────────────────── */}
+      {showPaymentModal && (
+        <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && handleClosePaymentModal()}>
+          <div className="admin-modal-container" style={{ maxWidth: '500px' }}>
+            <div className="admin-modal-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Registrar Pago de Sueldo</h3>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--on-surface-variant)', marginTop: '0.2rem' }}>
+                  {paymentDetail ? `${paymentDetail.u_nombres} ${paymentDetail.u_apellidos}` : 'Entrenador'}
+                </p>
+              </div>
+              <button className="btn-icon" onClick={handleClosePaymentModal} disabled={paymentSaving}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePayment}>
+              <div className="admin-modal-body">
+                {paymentFormError && (
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '0.5rem',
+                    color: '#dc2626',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                  }}>
+                    <AlertCircle size={15} />
+                    {paymentFormError}
+                  </div>
+                )}
+
+                <input type="hidden" value={paymentFormData.hs_en_u_id} onChange={(e) => setPaymentFormData({ ...paymentFormData, hs_en_u_id: e.target.value })} />
+
+                {/* Monto pagado */}
+                <div className="admin-form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <DollarSign size={13} /> Monto Pagado (hs_monto_pagado) <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className="admin-input"
+                    value={paymentFormData.hs_monto_pagado}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, hs_monto_pagado: e.target.value })}
+                    placeholder="Ej. 2500.00"
+                    required
+                  />
+                </div>
+
+                {/* Fecha de pago */}
+                <div className="admin-form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Calendar size={13} /> Fecha de Pago (hs_fecha_pago) <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="admin-input"
+                    value={paymentFormData.hs_fecha_pago}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, hs_fecha_pago: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* Período correspondiente */}
+                <div className="admin-form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Calendar size={13} /> Período Correspondiente (hs_periodo_correspondiente) <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <input
+                    type="month"
+                    className="admin-input"
+                    value={paymentFormData.hs_periodo_correspondiente}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, hs_periodo_correspondiente: e.target.value })}
+                    required
+                  />
+                  <small style={{ color: '#78716c', fontSize: '0.7rem', marginTop: '0.25rem', display: 'block' }}>
+                    Formato YYYY-MM (ej. 2026-08 para agosto 2026)
+                  </small>
+                </div>
+              </div>
+
+              <div className="admin-modal-footer">
+                <button type="button" className="btn-secondary" onClick={handleClosePaymentModal} disabled={paymentSaving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" disabled={paymentSaving} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {paymentSaving
+                    ? (<><div style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Guardando...</>)
+                    : 'Registrar Pago'
+                  }
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -184,5 +184,60 @@ export const FacturaModel = {
         `;
         const { rows } = await pool.query(query, [u_id]);
         return rows;
+    },
+
+    // Obtener resumen de ingresos por rango de fechas
+    getResumenIngresosPorFecha: async (fechaInicio, fechaFin) => {
+        const query = `
+            SELECT 
+                COALESCE(SUM(f.f_valor_total), 0) as total_facturado,
+                COALESCE(SUM(CASE WHEN f.f_ep_id = 2 THEN f.f_valor_total ELSE 0 END), 0) as total_pagado,
+                COALESCE(SUM(CASE WHEN f.f_ep_id IS NULL OR f.f_ep_id != 2 THEN f.f_valor_total ELSE 0 END), 0) as total_pendiente,
+                COUNT(*) as cantidad_facturas,
+                COUNT(CASE WHEN f.f_ep_id = 2 THEN 1 END) as facturas_pagadas,
+                COUNT(CASE WHEN f.f_ep_id IS NULL OR f.f_ep_id != 2 THEN 1 END) as facturas_pendientes
+            FROM factura f
+            WHERE f.f_fecha_hora::date BETWEEN $1 AND $2
+        `;
+        const { rows } = await pool.query(query, [fechaInicio, fechaFin]);
+        // Retornar objeto con valores por defecto si no hay resultados
+        return rows[0] || {
+            total_facturado: 0,
+            total_pagado: 0,
+            total_pendiente: 0,
+            cantidad_facturas: 0,
+            facturas_pagadas: 0,
+            facturas_pendientes: 0
+        };
+    },
+
+    // Obtener detalle de facturas por rango de fechas para exportación
+    getFacturasPorFecha: async (fechaInicio, fechaFin) => {
+        const query = `
+            SELECT
+                f.f_id,
+                f.f_valor_total,
+                f.f_fecha_hora,
+                f.f_ep_id,
+                ep.ep_nombre AS estado_pago,
+                u.u_id,
+                u.u_numero_documento,
+                u.u_nombres,
+                u.u_apellidos,
+                u.u_correo_electronico,
+                pe.pe_id,
+                pe.pe_nombre,
+                df.df_precio_unitario,
+                df.df_subtotal
+            FROM factura f
+            JOIN usuario u ON f.f_u_id = u.u_id
+            JOIN detalle_factura df ON df.f_id = f.f_id
+            JOIN plan_entrenamiento pe ON df.pe_id = pe.pe_id
+            LEFT JOIN estado_pago ep ON f.f_ep_id = ep.ep_id
+            WHERE f.f_fecha_hora::date BETWEEN $1 AND $2
+            ORDER BY f.f_fecha_hora DESC
+        `;
+        const { rows } = await pool.query(query, [fechaInicio, fechaFin]);
+        return rows || [];
     }
 };

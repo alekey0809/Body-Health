@@ -33,11 +33,11 @@ export const getHistorialSueldoByTrainer = async (req, res) => {
 
 export const createHistorialSueldo = async (req, res) => {
     try {
-        const { hs_en_u_id, hs_monto_pago, hs_fecha_pago, hs_periodo_correspondiente } = req.body;
-        if (!hs_en_u_id || !hs_monto_pago || !hs_fecha_pago || !hs_periodo_correspondiente) {
+        const { hs_en_u_id, hs_monto_pagado, hs_fecha_pago, hs_periodo_correspondiente } = req.body;
+        if (!hs_en_u_id || !hs_monto_pagado || !hs_fecha_pago || !hs_periodo_correspondiente) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
-        const nuevo = await HistorialSueldoModel.create({ hs_en_u_id, hs_monto_pago, hs_fecha_pago, hs_periodo_correspondiente });
+        const nuevo = await HistorialSueldoModel.create({ hs_en_u_id, hs_monto_pagado, hs_fecha_pago, hs_periodo_correspondiente });
         return res.status(201).json(nuevo);
     } catch (error) {
         console.error('Error al crear registro de sueldo:', error.message);
@@ -48,8 +48,8 @@ export const createHistorialSueldo = async (req, res) => {
 export const updateHistorialSueldo = async (req, res) => {
     const { id } = req.params;
     try {
-        const { hs_monto_pago, hs_fecha_pago, hs_periodo_correspondiente } = req.body;
-        const actualizado = await HistorialSueldoModel.update(id, { hs_monto_pago, hs_fecha_pago, hs_periodo_correspondiente });
+        const { hs_monto_pagado, hs_fecha_pago, hs_periodo_correspondiente } = req.body;
+        const actualizado = await HistorialSueldoModel.update(id, { hs_monto_pagado, hs_fecha_pago, hs_periodo_correspondiente });
         if (!actualizado) {
             return res.status(404).json({ message: 'Registro de sueldo no encontrado' });
         }

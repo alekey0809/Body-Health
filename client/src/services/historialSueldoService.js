@@ -27,6 +27,7 @@ export const getHistorialSueldoByTrainer = async (en_u_id) => {
 
 /**
  * Crea un nuevo registro de pago de sueldo.
+ * data: { hs_en_u_id, hs_monto_pagado, hs_fecha_pago, hs_periodo_correspondiente }
  */
 export const createHistorialSueldo = async (data) => {
   const response = await api.post('/api/historial-sueldos', data);
