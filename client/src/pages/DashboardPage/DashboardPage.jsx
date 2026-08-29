@@ -1,24 +1,14 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { User, Activity, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink, Bell, ChevronRight, List } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { User, CreditCard, CalendarCheck, Dumbbell, Menu, X, LogOut, CheckCircle, PlusCircle, Clock, History, XCircle, FileText, ExternalLink, Bell, ChevronRight, List } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { getMembresiasByUsuario } from '../../services/pagoService';
 import { getNotificaciones, getNoLeidasCount, marcarLeida, marcarTodasLeidas } from '../../services/notificacionService';
+import PhysicalTracking from './components/PhysicalTracking';
 import './DashboardPage.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-
-const dataGrafica = [
-  { name: 'Lun', calorias: 400 },
-  { name: 'Mar', calorias: 300 },
-  { name: 'Mie', calorias: 550 },
-  { name: 'Jue', calorias: 200 },
-  { name: 'Vie', calorias: 600 },
-  { name: 'Sab', calorias: 700 },
-  { name: 'Dom', calorias: 350 },
-];
 
 const DashboardPage = () => {
   const { user, logout } = useContext(AuthContext);
@@ -405,29 +395,7 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* 2. Gráficas (Salud/Progreso) */}
-          <div className="dash-card dash-card-wide" id="progreso">
-            <div className="card-header">
-              <Activity className="card-icon" /> 
-              <h3>Progreso de Actividad</h3>
-            </div>
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dataGrafica}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" />
-                  <XAxis dataKey="name" stroke="var(--on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}
-                    itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
-                  />
-                  <Line type="monotone" dataKey="calorias" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* 3. Estado de Pagos */}
+          {/* 2. Estado de Pagos */}
           <div className="dash-card" id="pagos">
             <div className="card-header">
               <CreditCard className="card-icon" /> 
@@ -595,10 +563,15 @@ const DashboardPage = () => {
                  )}
                </div>
              </div>
-           </div>
-           
-         </div>
-      </main>
+</div>
+            
+            {/* 6. Seguimiento y Estadísticas Físicas */}
+            <div className="dash-card dash-card-wide" id="seguimiento-fisico">
+              <PhysicalTracking user={user} />
+            </div>
+            
+          </div>
+       </main>
 
       {/* Modal Historial de Pagos */}
       {showPaymentHistory && (
