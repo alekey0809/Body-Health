@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { ArrowLeft, Dumbbell, CreditCard, Landmark, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Lock, ShieldCheck, CreditCard, Landmark } from 'lucide-react';
 import { getPlanById } from '../../services/planService';
 import PasswordStrengthMeter from '../../components/PasswordStrengthMeter/PasswordStrengthMeter';
 import { validateUserRegistration, sanitizeDocumentInput } from '../../utils/validationUtils';
+import api from '../../services/api';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
-  const { user, register } = useContext(AuthContext);
+  const { user, register, login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const planId = searchParams.get('planId');
@@ -16,17 +17,8 @@ const CheckoutPage = () => {
   const [plan, setPlan] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchPlan = async () => {
-      setLoadingPlan(true);
-      const data = await getPlanById(planId);
-      setPlan(data);
-      setLoadingPlan(false);
-    };
-    fetchPlan();
-  }, [planId]);
-  
   // Si está logueado, pre-llenar. Si no, vacío.
   const [formData, setFormData] = useState({
     nombres: user?.nombre?.split(' ')[0] || '',
@@ -38,11 +30,18 @@ const CheckoutPage = () => {
     contacto: ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('card'); // card | pse
-  const [loading, setLoading] = useState(false);
-
   const planNombre = plan?.pe_nombre || 'Plan';
   const planPrecio = parseFloat(plan?.pe_precio_base || 0).toLocaleString('es-CO');
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      setLoadingPlan(true);
+      const data = await getPlanById(planId);
+      setPlan(data);
+      setLoadingPlan(false);
+    };
+    fetchPlan();
+  }, [planId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,6 +63,19 @@ const CheckoutPage = () => {
     }
   };
 
+  const createInvoice = async (userId, cedula) => {
+    try {
+      const response = await api.post('/api/pagos', {
+        cedula: String(cedula).trim(),
+        pe_id: parseInt(planId, 10)
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Error creating invoice:', err);
+      throw err.response?.data?.message || 'Error al crear la factura';
+    }
+  };
+
   const handleCheckout = async (e) => {
     e.preventDefault();
     setError('');
@@ -82,24 +94,55 @@ const CheckoutPage = () => {
     }
 
     setLoading(true);
-    
+
     try {
+      let currentUser = user;
+
       if (!user) {
-        await register({
+        // Registrar usuario nuevo directamente via API (evita navegación del AuthContext)
+        const registerResponse = await api.post('/api/users/register', {
           ...formData,
           idRol: 2, // Cliente
           idEstadoGen: 1
         });
+        
+        if (!registerResponse.data.ok) {
+          throw new Error(registerResponse.data.message || 'Error al registrar usuario');
+        }
+        
+        // Hacer login para obtener el token y user ID
+        const loginResponse = await api.post('/api/users/login', {
+          correo: formData.correo,
+          contrasena: formData.contrasena
+        });
+        
+        if (loginResponse.data.ok) {
+          localStorage.setItem('token', loginResponse.data.token);
+          localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+          currentUser = loginResponse.data.user;
+        } else {
+          throw new Error('Error al iniciar sesión tras registro');
+        }
       }
 
-      // Simular tiempo de procesamiento de pago
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/payment-confirmation');
-      }, 1500);
+      // Crear factura pendiente (login response uses 'id' for user ID)
+      const userId = currentUser.u_id || currentUser.id;
+      const invoiceData = await createInvoice(userId, formData.numeroDoc);
+
+      // Redirigir a confirmación con datos de la factura
+      navigate('/payment-confirmation', {
+        state: {
+          invoiceId: invoiceData.f_id,
+          amount: invoiceData.f_valor_total,
+          planName: planNombre,
+          date: invoiceData.f_fecha_hora
+        }
+      });
 
     } catch (err) {
-      setError(typeof err === 'string' ? err : 'Error al procesar el pago');
+      const errorMessage = err.response?.data?.message 
+        || (err instanceof Error ? err.message : 'Error al procesar el pago');
+      setError(errorMessage);
       setLoading(false);
     }
   };

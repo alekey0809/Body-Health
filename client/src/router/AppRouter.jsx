@@ -56,6 +56,7 @@ const AppRouter = () => {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/payment-confirmation" element={<PaymentConfirmationPage />} />
         <Route path="/planes" element={<PlansCatalogPage />} />
+        <Route path="/" element={<PlansCatalogPage />} />
     
         {/* Rutas Privadas (Solo logueados) */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

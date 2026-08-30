@@ -19,7 +19,7 @@ const PlansCatalogPage = () => {
   return (
     <div className="plans-catalog-layout">
       <header className="catalog-header">
-        <button onClick={() => navigate('/dashboard')} className="back-btn">
+        <button onClick={() => navigate(-1)} className="back-btn">
           <ArrowLeft size={24} />
         </button>
         <h2>Catálogo de Planes</h2>
