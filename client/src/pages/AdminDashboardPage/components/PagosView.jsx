@@ -167,9 +167,22 @@ const PagosView = () => {
     try {
       const result = await updateEstadoPago(f_id, newEpId);
       if (result.ok) {
-        setPagos(prev => prev.map(p => 
-          p.f_id === f_id ? { ...p, f_ep_id: newEpId, estado_pago: estadosPago.find(e => e.ep_id === newEpId)?.nombre } : p
-        ));
+        const { m_eg_id } = result.factura;
+        // APROBADO (ep_id=2) + fecha no vencida = membresía vigente
+        const esAprobado = newEpId === 2;
+        setPagos(prev => prev.map(p => {
+          if (p.f_id !== f_id) return p;
+          const fechaVigente = p.m_fecha_vencimiento
+            ? new Date(p.m_fecha_vencimiento) >= new Date(new Date().toDateString())
+            : false;
+          return {
+            ...p,
+            f_ep_id: newEpId,
+            estado_pago: estadosPago.find(e => e.ep_id === newEpId)?.nombre,
+            m_eg_id,
+            es_vigente: esAprobado && fechaVigente,
+          };
+        }));
       } else {
         alert('Error: ' + result.message);
       }

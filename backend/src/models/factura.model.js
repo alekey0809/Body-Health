@@ -121,13 +121,77 @@ export const FacturaModel = {
         return rows[0] || null;
     },
 
-    // Actualizar estado de pago de una factura
+    // Actualizar estado de pago de una factura y sincronizar estado de membresía
     updateEstadoPago: async (f_id, ep_id) => {
-        const query = `
-            UPDATE factura SET f_ep_id = $2 WHERE f_id = $1 RETURNING f_id, f_ep_id
-        `;
-        const { rows } = await pool.query(query, [f_id, ep_id]);
-        return rows[0] || null;
+        // Mapa de estados de pago → estados de membresía
+        // ep_id: 1=PENDIENTE, 2=APROBADO, 3=RECHAZADO, 4=EN_PROCESO, 5=ANULADO
+        // eg_id: 4=Pendiente de Pago, 9=Activo, 11=Cancelada
+        const EP_TO_EG = {
+            1: 4,  // PENDIENTE    → Pendiente de Pago
+            2: 9,  // APROBADO     → Activo
+            3: 11, // RECHAZADO    → Cancelada
+            4: 4,  // EN_PROCESO   → Pendiente de Pago
+            5: 11, // ANULADO      → Cancelada
+        };
+
+        if (!(ep_id in EP_TO_EG)) {
+            throw new Error(`ep_id inválido: ${ep_id}. Valores permitidos: 1, 2, 3, 4, 5.`);
+        }
+
+        const nuevoEgId = EP_TO_EG[ep_id];
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Actualizar estado de pago en la factura
+            const facturaRes = await client.query(
+                `UPDATE factura SET f_ep_id = $2 WHERE f_id = $1
+                 RETURNING f_id, f_ep_id, f_u_id`,
+                [f_id, ep_id]
+            );
+            if (facturaRes.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return null;
+            }
+            const { f_id: updatedFid } = facturaRes.rows[0];
+
+            // 2. Actualizar estado de la membresía vinculada a esta factura.
+            //    EP_TO_EG ya garantiza que nuevoEgId es un estado de membresía válido
+            //    (4=Pendiente de Pago, 9=Activo, 11=Cancelada).
+            const memRes = await client.query(
+                `UPDATE membresia
+                 SET m_eg_id = $2
+                 WHERE f_id = $1
+                 RETURNING m_id, m_eg_id`,
+                [updatedFid, nuevoEgId]
+            );
+
+            // 3. Obtener el nombre del nuevo estado de membresía para la respuesta
+            const egRes = await client.query(
+                `SELECT eg_nombre FROM estado_general WHERE eg_id = $1`,
+                [nuevoEgId]
+            );
+            const estadoMembresiaNombre = egRes.rows[0]?.eg_nombre ?? null;
+
+            await client.query('COMMIT');
+
+            console.log(
+                `[updateEstadoPago] factura ${updatedFid}: ep_id=${ep_id} → m_eg_id=${nuevoEgId} (${estadoMembresiaNombre})`
+            );
+
+            return {
+                f_id: updatedFid,
+                f_ep_id: ep_id,
+                m_eg_id: nuevoEgId,
+                m_eg_nombre: estadoMembresiaNombre,
+                membresias_actualizadas: memRes.rowCount,
+            };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
 
     // Eliminar factura en cascada (membresia → detalle_factura → factura)

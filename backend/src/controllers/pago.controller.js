@@ -105,21 +105,36 @@ export const deletePago = async (req, res) => {
     }
 };
 
-// PATCH /api/pagos/:id/estado  → actualizar estado de pago
+// PATCH /api/pagos/:id/estado  → actualizar estado de pago y sincronizar membresía
 export const updateEstadoPago = async (req, res) => {
     const { ep_id } = req.body;
     const { id } = req.params;
 
-    if (!ep_id || isNaN(parseInt(ep_id, 10))) {
+    const epIdInt = parseInt(ep_id, 10);
+    if (!ep_id || isNaN(epIdInt)) {
         return res.status(400).json({ ok: false, message: 'ep_id es requerido y debe ser un número' });
+    }
+    const EP_VALIDOS = [1, 2, 3, 4, 5];
+    if (!EP_VALIDOS.includes(epIdInt)) {
+        return res.status(400).json({
+            ok: false,
+            message: `ep_id inválido: ${epIdInt}. Valores permitidos: 1 (PENDIENTE), 2 (APROBADO), 3 (RECHAZADO), 4 (EN_PROCESO), 5 (ANULADO).`
+        });
     }
 
     try {
-        const updated = await FacturaModel.updateEstadoPago(parseInt(id, 10), parseInt(ep_id, 10));
+        const updated = await FacturaModel.updateEstadoPago(parseInt(id, 10), epIdInt);
         if (!updated) return res.status(404).json({ ok: false, message: 'Pago no encontrado' });
-        return res.json({ ok: true, message: 'Estado actualizado', factura: updated });
+        return res.json({
+            ok: true,
+            message: 'Estado de pago y membresía actualizados correctamente',
+            factura: updated
+        });
     } catch (error) {
         console.error('Error al actualizar estado:', error.message);
+        if (error.message.startsWith('ep_id inválido')) {
+            return res.status(400).json({ ok: false, message: error.message });
+        }
         return res.status(500).json({ ok: false, message: 'Error al actualizar estado' });
     }
 };
