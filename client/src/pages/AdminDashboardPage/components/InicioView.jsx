@@ -723,7 +723,7 @@ const InicioView = () => {
                         <tr key={pago.facturaId} style={{ borderBottom: '1px solid rgba(216, 194, 191, 0.3)' }}>
                           <td style={{ padding: '0.75rem 0.5rem' }}>
                             <div>
-                              <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: '600', color: '#e01717' }}>#{pago.facturaId.slice(-8)}</span>
+                              <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: '600', color: '#e01717' }}>#{String(pago.facturaId).slice(-8)}</span>
                               <div style={{ fontSize: '0.6875rem', color: '#78716c' }}>{pago.plan}</div>
                             </div>
                           </td>

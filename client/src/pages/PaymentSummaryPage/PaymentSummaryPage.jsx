@@ -42,7 +42,7 @@ const PaymentSummaryPage = () => {
     setLoadingPlan(true);
     getPlanById(planId)
       .then(data => setPlan(data))
-      .catch(() => setError('Error al cargar el plan'))
+      .catch(() => setError('Error al cargar el plan'))      
       .finally(() => setLoadingPlan(false));
   }, [planId]);
 
