@@ -15,6 +15,7 @@ import backupRoutes from './routes/backup.routes.js';
 import valoracionFisicaRoutes from './routes/valoracionFisica.routes.js';
 import informeFinancieroRoutes from './routes/informeFinanciero.routes.js';
 import adminDashboardRoutes from './routes/adminDashboard.routes.js';
+import eventoRoutes from './routes/evento.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,8 @@ app.use('/api/valoracion-fisica', valoracionFisicaRoutes);
 app.use('/api/informes-financieros', informeFinancieroRoutes);
 // Rutas de Dashboard Admin
 app.use('/api/admin-dashboard', adminDashboardRoutes);
+// Rutas de Eventos
+app.use('/api/eventos', eventoRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

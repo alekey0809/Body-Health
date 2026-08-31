@@ -255,13 +255,8 @@
   border-radius: 1rem;
   overflow: hidden;
   position: relative;
-  filter: grayscale(100%);
   transition: filter 0.7s;
   border: 1px solid var(--outline-variant);
-}
-
-.location-map:hover {
-  filter: grayscale(0%);
 }
 
 .location-map img {

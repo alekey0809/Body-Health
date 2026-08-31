@@ -306,15 +306,7 @@ const HomePage = () => {
               <li><MapPin size={14} className="contact-icon" /> Cra34 #65-69 (fatima, Manizales)</li>
             </ul>
           </div>
-          
-          <div className="footer-newsletter-col">
-            <h4>Manifesto</h4>
-            <p>Suscríbete a nuestra curaduría semanal de salud y bienestar.</p>
-            <div className="newsletter-input">
-              <input type="email" placeholder="Email Address" />
-              <button><ArrowRight size={18} /></button>
-            </div>
-          </div>
+        
         </div>
         
         <div className="home-container footer-bottom">

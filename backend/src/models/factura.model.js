@@ -47,10 +47,10 @@ export const FacturaModel = {
                 [f_id, pe_id, precio_unitario, precio_unitario]
             );
 
-            // 3. Insertar membresia (30 días desde hoy, m_eg_id = 9 Activo)
+            // 3. Insertar membresia (30 días desde hoy, m_eg_id = 4 Pendiente de Pago)
             const membresiaRes = await client.query(
                 `INSERT INTO membresia (m_u_id, m_pe_id, f_id, m_fecha_inicio, m_fecha_vencimiento, m_eg_id)
-                 VALUES ($1, $2, $3, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', 9)
+                 VALUES ($1, $2, $3, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', 4)
                  RETURNING m_id, m_fecha_inicio, m_fecha_vencimiento, m_eg_id`,
                 [u_id, pe_id, f_id]
             );
