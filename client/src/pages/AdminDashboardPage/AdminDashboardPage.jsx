@@ -158,7 +158,7 @@ const AdminDashboardPage = () => {
               <span className="nav-item-text">Ir a Dashboard Usuario</span>
             </button>
             <button 
-              onClick={() => navigate('/main')} 
+              onClick={() => navigate('/')} 
               className="nav-item" 
               style={{ color: '#57534e', width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
             >
@@ -298,7 +298,7 @@ const AdminDashboardPage = () => {
               </button>
 
               <button
-                onClick={() => { navigate('/main'); setIsMobileMenuOpen(false); }}
+                onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }}
                 className="admin-mobile-nav-link"
               >
                 <ExternalLink size={20} />

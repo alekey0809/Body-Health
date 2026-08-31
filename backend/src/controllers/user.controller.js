@@ -254,14 +254,19 @@ export const forgotPassword = async (req, res) => {
         };
         const resetToken = jwt.sign(tokenPayload, secret, { expiresIn: '15m' });
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const reqOrigin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+        const frontendUrl = (process.env.FRONTEND_URL || reqOrigin || 'http://localhost:5173').replace(/\/$/, '');
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-        await sendPasswordResetEmail({
+        const mailResult = await sendPasswordResetEmail({
             toEmail: user.u_correo_electronico,
             userName: `${user.u_nombres} ${user.u_apellidos}`,
             resetUrl
         });
+
+        if (!mailResult.success) {
+            console.error('⚠️ No se pudo enviar el correo de recuperación:', mailResult.error);
+        }
 
         return res.status(200).json({
             ok: true,

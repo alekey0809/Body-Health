@@ -56,7 +56,7 @@ const AppRouter = () => {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/payment-confirmation" element={<PaymentConfirmationPage />} />
         <Route path="/planes" element={<PlansCatalogPage />} />
-        <Route path="/" element={<PlansCatalogPage />} />
+        <Route path="/" element={<HomePage />} />
     
         {/* Rutas Privadas (Solo logueados) */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
@@ -66,7 +66,7 @@ const AppRouter = () => {
         <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
         {/* Ruta por defecto */}
-        <Route path="/*" element={<Navigate to="/main" replace />} />
+        <Route path="/*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

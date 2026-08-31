@@ -67,7 +67,7 @@ const RegisterPage = () => {
     <div className="register-layout">
       {/* TopAppBar */}
       <header className="register-header">
-        <Link to="/main" className="back-btn">
+        <Link to="/" className="back-btn">
           <ArrowLeft size={24} />
         </Link>
       </header>

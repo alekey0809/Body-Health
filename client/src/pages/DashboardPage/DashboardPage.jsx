@@ -284,7 +284,7 @@ const DashboardPage = () => {
           <h1 className="topbar-logo-text">BODYHEALT</h1>
         </div>
         <div className="topbar-right">
-          <Link to="/main" className="btn-secondary small-btn desktop-only">Ir al Landing</Link>
+          <Link to="/" className="btn-secondary small-btn desktop-only">Ir al Landing</Link>
           <Link to="/planes" className="btn-secondary small-btn desktop-only">Ver Planes</Link>
           
           {/* Notification Bell */}
@@ -317,7 +317,7 @@ const DashboardPage = () => {
         <div className="user-mobile-drawer">
           <nav className="user-mobile-nav">
             <button 
-              onClick={() => { setIsMobileMenuOpen(false); navigate('/main'); }} 
+              onClick={() => { setIsMobileMenuOpen(false); navigate('/'); }} 
               className="user-mobile-nav-link"
             >
               <Activity size={20} />

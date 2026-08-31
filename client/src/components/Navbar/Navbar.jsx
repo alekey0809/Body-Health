@@ -29,15 +29,15 @@ const Navbar = () => {
   return (
     <header className="global-navbar">
       <div className="navbar-container">
-        <Link to="/main" className="navbar-brand" onClick={closeMobileMenu}>
+        <Link to="/" className="navbar-brand" onClick={closeMobileMenu}>
           <Dumbbell className="brand-icon" size={28} />
           <span className="brand-text">Bodyhealt</span>
         </Link>
         
         <nav className="navbar-links">
-          <a href="/main#planes" className="nav-link">Planes</a>
-          <a href="/main#ubicacion" className="nav-link">Ubicación</a>
-          <a href="/main#noticias" className="nav-link">Noticias</a>
+          <a href="/#planes" className="nav-link">Planes</a>
+          <a href="/#ubicacion" className="nav-link">Ubicación</a>
+          <a href="/#noticias" className="nav-link">Noticias</a>
         </nav>
         
         <div className="navbar-actions">
@@ -69,9 +69,9 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="navbar-mobile-menu">
           <nav className="mobile-nav-links">
-            <a href="/main#planes" className="mobile-nav-link" onClick={closeMobileMenu}>Planes</a>
-            <a href="/main#ubicacion" className="mobile-nav-link" onClick={closeMobileMenu}>Ubicación</a>
-            <a href="/main#noticias" className="mobile-nav-link" onClick={closeMobileMenu}>Noticias</a>
+            <a href="/#planes" className="mobile-nav-link" onClick={closeMobileMenu}>Planes</a>
+            <a href="/#ubicacion" className="mobile-nav-link" onClick={closeMobileMenu}>Ubicación</a>
+            <a href="/#noticias" className="mobile-nav-link" onClick={closeMobileMenu}>Noticias</a>
           </nav>
           <div className="mobile-nav-actions">
             {user ? (

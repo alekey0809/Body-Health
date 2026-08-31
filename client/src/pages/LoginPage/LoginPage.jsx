@@ -60,7 +60,7 @@ const LoginPage = () => {
       <div className="login-modal-overlay">
         <div className="login-modal-content">
           
-          <button onClick={() => navigate('/main')} className="close-btn">
+          <button onClick={() => navigate('/')} className="close-btn">
             <X size={24} />
           </button>
 

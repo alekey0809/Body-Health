@@ -1,22 +1,43 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Crea el transporter de correo según variables de entorno o Ethereal (para pruebas)
+ * Crea el transporter de correo según variables de entorno (SMTP/Gmail/Resend/Brevo, etc.) o Ethereal (para pruebas local)
  */
 const createTransporter = async () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  // Option 1: Configuración mediante servicio (ej. Gmail, Outlook, Brevo, SendGrid)
+  if (process.env.SMTP_SERVICE && process.env.SMTP_USER && process.env.SMTP_PASS) {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
+      service: process.env.SMTP_SERVICE,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
-  // Fallback para entorno de desarrollo: Ethereal Mail
+  // Option 2: Configuración mediante servidor SMTP genérico (host, puerto)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: port,
+      secure: secure,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+  }
+
+  // Fallback para entorno de desarrollo o servidores sin SMTP configurado (Ethereal Mail)
   try {
     const testAccount = await nodemailer.createTestAccount();
     return nodemailer.createTransport({
@@ -39,16 +60,16 @@ const createTransporter = async () => {
  */
 export const sendPasswordResetEmail = async ({ toEmail, userName, resetUrl }) => {
   console.log('\n---------------------------------------------------');
-  console.log('📧 ENLACE DE RESTABLECIMIENTO DE CONTRASEÑA:');
+  console.log('📧 SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA');
   console.log(`Para: ${toEmail}`);
-  console.log(`URL: ${resetUrl}`);
+  console.log(`URL de recuperación: ${resetUrl}`);
   console.log('---------------------------------------------------\n');
 
   try {
     const transporter = await createTransporter();
-    if (!transporter) {
-      return { success: true, mode: 'console' };
-    }
+    
+    // Determinar remitente (remitente configurado o el usuario SMTP)
+    const fromAddress = process.env.SMTP_FROM || (process.env.SMTP_USER ? `"BodyHealth Soporte" <${process.env.SMTP_USER}>` : '"BodyHealth Soporte" <no-reply@bodyhealth.com>');
 
     const htmlContent = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f8f6; border-radius: 12px; color: #1c1917;">
@@ -90,8 +111,13 @@ export const sendPasswordResetEmail = async ({ toEmail, userName, resetUrl }) =>
       </div>
     `;
 
+    if (!transporter) {
+      console.warn('⚠️ [Render Info] No hay configuración SMTP activa. El enlace impreso arriba en logs puede ser usado manualmente.');
+      return { success: true, mode: 'console' };
+    }
+
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"BodyHealth Soporte" <no-reply@bodyhealth.com>',
+      from: fromAddress,
       to: toEmail,
       subject: '🔑 Restablece tu contraseña - BodyHealth',
       html: htmlContent,
@@ -99,12 +125,14 @@ export const sendPasswordResetEmail = async ({ toEmail, userName, resetUrl }) =>
 
     const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : null;
     if (previewUrl) {
-      console.log('🔗 Previsualización del correo en Ethereal:', previewUrl);
+      console.log('🔗 Previsualización del correo (Ethereal):', previewUrl);
+    } else {
+      console.log('✅ Correo de restablecimiento enviado exitosamente a:', toEmail);
     }
 
     return { success: true, info, previewUrl };
   } catch (error) {
-    console.error('❌ Error enviando correo:', error);
+    console.error('❌ Error al enviar correo de restablecimiento:', error.message);
     return { success: false, error: error.message };
   }
 };
