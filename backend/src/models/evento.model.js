@@ -86,16 +86,19 @@ export const EventoModel = {
             const eventoValues = [ev_u_id, ev_nombre, ev_descripcion || null, ev_fecha_hora];
             const { rows: eventoRows } = await client.query(eventoQuery, eventoValues);
             const nuevoEvento = eventoRows[0];
-            // 2. Crear notificación para el usuario/admin que creó el evento
+            // 2. Crear notificación para todos los usuarios registrados
+            const fechaFormateada = new Date(ev_fecha_hora).toLocaleString('es-CO', {
+                dateStyle: 'full',
+                timeStyle: 'short'
+            });
             const notifQuery = `
                 INSERT INTO notificacion (n_u_id, n_tipo_evento, n_titulo, n_mensaje, n_evento_id)
-                VALUES ($1, $2, $3, $4, $5)
+                SELECT u_id, 'EVENTO_CREADO', $1, $2, $3
+                FROM usuario
             `;
             const notifValues = [
-                ev_u_id,
-                'EVENTO_CREADO',
-                `Nuevo evento creado: ${ev_nombre}`,
-                `Has creado el evento "${ev_nombre}" programado para el ${new Date(ev_fecha_hora).toLocaleString('es-CO')}.`,
+                `🎉 Nuevo Evento: ${ev_nombre}`,
+                `Se ha programado el evento "${ev_nombre}" para el ${fechaFormateada}. ${ev_descripcion ? `Detalles: ${ev_descripcion}` : '¡Te esperamos!'}`,
                 nuevoEvento.ev_id
             ];
             await client.query(notifQuery, notifValues);

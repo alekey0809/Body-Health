@@ -89,7 +89,7 @@ export const createEvento = async (req, res) => {
             errors.push('El campo ev_fecha_hora es obligatorio y debe tener un formato de fecha valido (ISO 8601).');
         }
         // 4. Validar ev_u_id (uuid FK -> usuario.u_id, obligatorio)
-        const userId = ev_u_id || req.user?.u_id;
+        const userId = ev_u_id || req.user?.u_id || req.user?.id;
         if (!userId || typeof userId !== 'string' || !UUID_REGEX.test(userId.trim())) {
             errors.push('El campo ev_u_id es obligatorio y debe ser un UUID valido (ej: 123e4567-e89b-12d3-a456-426614174000).');
         }

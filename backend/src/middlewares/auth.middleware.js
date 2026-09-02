@@ -32,7 +32,7 @@ export const verifyToken = (req, res, next) => {
   }
 };
 
-// Middleware para verificar que el usuario autenticado sea Administrador (u_r_id === 1 o rol === 1)
+// Middleware para verificar que el usuario autenticado sea Administrador (u_r_id === 1 o rol === 1 o 'admin')
 export const verifyAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -41,9 +41,10 @@ export const verifyAdmin = (req, res, next) => {
     });
   }
 
-  const userRole = Number(req.user.rol ?? req.user.u_r_id);
+  const userRole = req.user.rol ?? req.user.u_r_id;
+  const isAdmin = userRole === 1 || Number(userRole) === 1 || String(userRole).toLowerCase() === 'admin' || String(userRole).toLowerCase() === 'administrador';
 
-  if (userRole !== 1) {
+  if (!isAdmin) {
     return res.status(403).json({
       ok: false,
       message: 'Acceso denegado. Esta operación está reservada exclusivamente para Administradores del sistema.'

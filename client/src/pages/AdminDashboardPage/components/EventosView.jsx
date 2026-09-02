@@ -407,7 +407,7 @@ const EventosView = () => {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <Bell size={18} color="#92400e" style={{ marginTop: '2px' }} />
                     <div style={{ fontSize: '0.8125rem', color: '#92400e' }}>
-                      <strong>Notificación automática:</strong> Al guardar este evento, se creará una notificación en el centro de notificaciones del administrador que lo creó, indicando el tipo "EVENTO_CREADO".
+                      <strong>Notificación automática:</strong> Al guardar este evento, se notificará automáticamente a todos los socios y usuarios en su centro de notificaciones bajo el tipo "EVENTO_CREADO".
                     </div>
                   </div>
                 </div>
