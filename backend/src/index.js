@@ -31,10 +31,6 @@ app.use(express.json());
 // Static file serving for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); 
 
-app.get('/', (req, res) => {
-    res.send('<h1>Body Health API</h1>');
-});
-
 // Rutas de Usuario (PostgreSQL)
 app.use('/api/users', userRoutes);
 // Rutas de Planes de Entrenamiento (PostgreSQL)
@@ -63,6 +59,20 @@ app.use('/api/admin-dashboard', adminDashboardRoutes);
 app.use('/api/eventos', eventoRoutes);
 // Rutas de Notificaciones
 app.use('/api/notificaciones', notificacionRoutes);
+
+// Servir archivos estáticos del frontend (React / Vite) si existen
+const clientDistPath = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientDistPath));
+
+// Fallback para React Router (SPA): cualquier ruta que no sea API redirige a index.html
+app.get('*', (req, res) => {
+    const indexPath = path.join(clientDistPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            res.status(200).send('<h1>Body Health API</h1>');
+        }
+    });
+});
 
 app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
