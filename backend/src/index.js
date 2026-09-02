@@ -16,6 +16,8 @@ import valoracionFisicaRoutes from './routes/valoracionFisica.routes.js';
 import informeFinancieroRoutes from './routes/informeFinanciero.routes.js';
 import adminDashboardRoutes from './routes/adminDashboard.routes.js';
 import eventoRoutes from './routes/evento.routes.js';
+import notificacionRoutes from './routes/notificacion.routes.js';
+import { pool } from './config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,9 +61,23 @@ app.use('/api/informes-financieros', informeFinancieroRoutes);
 app.use('/api/admin-dashboard', adminDashboardRoutes);
 // Rutas de Eventos
 app.use('/api/eventos', eventoRoutes);
+// Rutas de Notificaciones
+app.use('/api/notificaciones', notificacionRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    try {
+        await pool.query(`
+            ALTER TABLE evento ADD COLUMN IF NOT EXISTS ev_fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW();
+            ALTER TABLE notificacion ADD COLUMN IF NOT EXISTS n_titulo VARCHAR(200) NOT NULL DEFAULT 'Notificación';
+            ALTER TABLE notificacion ADD COLUMN IF NOT EXISTS n_mensaje TEXT NOT NULL DEFAULT '';
+            ALTER TABLE notificacion ADD COLUMN IF NOT EXISTS n_leida BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE notificacion ADD COLUMN IF NOT EXISTS n_evento_id INTEGER REFERENCES evento(ev_id) ON DELETE SET NULL;
+            ALTER TABLE notificacion ADD COLUMN IF NOT EXISTS n_membresia_id INTEGER REFERENCES membresia(m_id) ON DELETE SET NULL;
+        `);
+    } catch (err) {
+        console.error('Verificación de esquema eventos/notificaciones:', err.message);
+    }
 });
 
 

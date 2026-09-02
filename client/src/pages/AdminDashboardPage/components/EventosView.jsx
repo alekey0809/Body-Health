@@ -84,7 +84,7 @@ const EventosView = () => {
       } else {
         await createEvento({
           ...formData,
-          ev_u_id: user?.u_id || null
+          ev_u_id: user?.u_id || user?.id || null
         });
       }
       await fetchEventos();

@@ -8,10 +8,13 @@ import {
     getNoLeidasCount,
     verificarAlertasMembresia
 } from '../controllers/notificacion.controller.js';
+import { verifyToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Todas las rutas requieren autenticación (se valida en el middleware auth.middleware.js)
+// Todas las rutas requieren autenticación
+router.use(verifyToken);
+
 router.get('/', getNotificaciones);
 router.get('/no-leidas/count', getNoLeidasCount);
 router.get('/:id', getNotificacionById);

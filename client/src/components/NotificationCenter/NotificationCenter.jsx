@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Bell, X, Check, CheckCircle, Mail, AlertCircle, Calendar, Clock, Trash2, Eye, Filter, Loader2 } from 'lucide-react';
-import { getNotificaciones, marcarLeida, marcarTodasLeidas, deleteNotificacion, getNoLeidasCount } from '../../../services/notificacionService';
-import { AuthContext } from '../../../context/AuthContext';
+import { getNotificaciones, marcarLeida, marcarTodasLeidas, deleteNotificacion, getNoLeidasCount } from '../../services/notificacionService';
+import { AuthContext } from '../../context/AuthContext';
 
 const NotificationCenter = ({ isOpen, onClose, onNotificationClick }) => {
   const { user } = useContext(AuthContext);
@@ -11,8 +11,10 @@ const NotificationCenter = ({ isOpen, onClose, onNotificationClick }) => {
   const [filter, setFilter] = useState('todas'); // 'todas', 'no-leidas', 'eventos', 'membresia'
   const [saving, setSaving] = useState(null); // ID de notificación que se está procesando
 
+  const userId = user?.u_id || user?.id;
+
   const fetchNotifications = async () => {
-    if (!user?.u_id) return;
+    if (!userId) return;
     setLoading(true);
     try {
       const data = await getNotificaciones({ limit: 50 });
@@ -25,7 +27,7 @@ const NotificationCenter = ({ isOpen, onClose, onNotificationClick }) => {
   };
 
   const fetchUnreadCount = async () => {
-    if (!user?.u_id) return;
+    if (!userId) return;
     try {
       const count = await getNoLeidasCount();
       setUnreadCount(count);
@@ -39,7 +41,7 @@ const NotificationCenter = ({ isOpen, onClose, onNotificationClick }) => {
       fetchNotifications();
       fetchUnreadCount();
     }
-  }, [isOpen, user?.u_id]);
+  }, [isOpen, userId]);
 
   const handleMarkRead = async (id) => {
     setSaving(id);

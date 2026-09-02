@@ -1,5 +1,4 @@
 import { pool } from '../config/db.js';
-
 export const EventoModel = {
     // Obtener todos los eventos (para Admin CRUD)
     getAll: async () => {
@@ -23,7 +22,6 @@ export const EventoModel = {
             client.release();
         }
     },
-
     // Obtener eventos futuros (para usuarios)
     getFuturos: async () => {
         const client = await pool.connect();
@@ -47,7 +45,6 @@ export const EventoModel = {
             client.release();
         }
     },
-
     // Obtener evento por ID
     getById: async (id) => {
         const client = await pool.connect();
@@ -70,13 +67,11 @@ export const EventoModel = {
             client.release();
         }
     },
-
     // Crear nuevo evento y generar notificación para el usuario/admin que lo creó
     create: async ({ ev_u_id, ev_nombre, ev_descripcion, ev_fecha_hora }) => {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-
             // 1. Insertar el evento
             const eventoQuery = `
                 INSERT INTO evento (ev_u_id, ev_nombre, ev_descripcion, ev_fecha_hora)
@@ -91,7 +86,6 @@ export const EventoModel = {
             const eventoValues = [ev_u_id, ev_nombre, ev_descripcion || null, ev_fecha_hora];
             const { rows: eventoRows } = await client.query(eventoQuery, eventoValues);
             const nuevoEvento = eventoRows[0];
-
             // 2. Crear notificación para el usuario/admin que creó el evento
             const notifQuery = `
                 INSERT INTO notificacion (n_u_id, n_tipo_evento, n_titulo, n_mensaje, n_evento_id)
@@ -105,7 +99,6 @@ export const EventoModel = {
                 nuevoEvento.ev_id
             ];
             await client.query(notifQuery, notifValues);
-
             await client.query('COMMIT');
             return nuevoEvento;
         } catch (error) {
@@ -115,7 +108,6 @@ export const EventoModel = {
             client.release();
         }
     },
-
     // Actualizar evento existente
     update: async (id, { ev_nombre, ev_descripcion, ev_fecha_hora }) => {
         const client = await pool.connect();
@@ -145,7 +137,6 @@ export const EventoModel = {
             client.release();
         }
     },
-
     // Eliminar evento
     delete: async (id) => {
         const client = await pool.connect();

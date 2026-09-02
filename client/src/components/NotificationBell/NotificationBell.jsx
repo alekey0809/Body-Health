@@ -11,8 +11,10 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  const userId = user?.u_id || user?.id;
+
   const fetchUnreadCount = async () => {
-    if (!user?.u_id) return;
+    if (!userId) return;
     try {
       const count = await getNoLeidasCount();
       setUnreadCount(count);
@@ -25,14 +27,14 @@ const NotificationBell = () => {
   React.useEffect(() => {
     setMounted(true);
     fetchUnreadCount();
-  }, [user?.u_id]);
+  }, [userId]);
 
   // Poll for updates every 30 seconds
   React.useEffect(() => {
-    if (!user?.u_id) return;
+    if (!userId) return;
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, [user?.u_id]);
+  }, [userId]);
 
   const handleNotificationClick = (notif) => {
     // Si la notificación tiene un evento relacionado, podríamos navegar a la vista del evento

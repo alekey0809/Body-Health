@@ -310,11 +310,11 @@ const HomePage = () => {
         </div>
         
         <div className="home-container footer-bottom">
-          <p>© 2024 Bodyhealt Collective. The Digital Curator of Fitness.</p>
+          <p>Proyecto realizado por Alejandro Avella</p>
           <div className="footer-cities">
-            <span>Buenos Aires</span>
-            <span>Montevideo</span>
-            <span>Santiago</span>
+            <span>Colombia</span>
+            <span>Manizales</span>
+            <span>bogota</span>
           </div>
         </div>
       </footer>

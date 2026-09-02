@@ -15,7 +15,13 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secreto_super_seguro_development');
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      u_id: decoded.u_id || decoded.id,
+      id: decoded.id || decoded.u_id,
+      rol: decoded.rol ?? decoded.u_r_id,
+      u_r_id: decoded.u_r_id ?? decoded.rol
+    };
     next();
   } catch (error) {
     return res.status(401).json({
