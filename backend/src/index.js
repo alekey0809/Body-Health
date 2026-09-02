@@ -64,8 +64,12 @@ app.use('/api/notificaciones', notificacionRoutes);
 const clientDistPath = path.join(__dirname, "../../client/dist");
 app.use(express.static(clientDistPath));
 
-// Fallback para React Router (SPA): cualquier ruta que no sea API redirige a index.html
-app.get('*', (req, res) => {
+// Fallback para React Router (SPA) compatible con Express 5: sirve index.html en recargas de página
+app.use((req, res) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+        return res.status(404).json({ message: 'Ruta no encontrada' });
+    }
+
     const indexPath = path.join(clientDistPath, 'index.html');
     res.sendFile(indexPath, (err) => {
         if (err) {
